@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>📋 Report Card</h2>
+
+<div class="card">
+  <form method="GET" style="display:flex; gap:8px;">
+    <input name="roll" value="{{ roll or '' }}" placeholder="Enter Roll No">
+    <button>🔍 Generate Report Card</button>
+  </form>
+</div>
+
+{% if student %}
+<div class="card">
+  <h3>👤 Student Information</h3>
+  <table>
+    <tr><td><b>Name:</b></td><td>{{ student['name'] }}</td></tr>
+    <tr><td><b>Roll No:</b></td><td>{{ student['roll_no'] }}</td></tr>
+    <tr><td><b>Class:</b></td><td>{{ student['class_name'] }}-{{ student['section'] }}</td></tr>
+    <tr><td><b>Father:</b></td><td>{{ student['father'] }}</td></tr>
+  </table>
+</div>
+
+{% if marks %}
+<div class="card">
+  <h3>📊 Marks Details</h3>
+  <table>
+    <tr><th>Subject</th><th>Exam</th><th>Obtained</th><th>Total</th><th>%</th><th>Grade</th></tr>
+    {% for m in marks %}
+    <tr>
+      <td>{{ m['subject'] }}</td>
+      <td>{{ m['exam'] }}</td>
+      <td>{{ m['marks'] }}</td>
+      <td>{{ m['total'] }}</td>
+      <td>{{ '{:.1f}'.format(m['pct']) }}%</td>
+      <td>{{ m['grade'] }}</td>
+    </tr>
+    {% endfor %}
+    <tr style="background:#f8f9fa; font-weight:bold;">
+      <td colspan="2">TOTAL</td>
+      <td>{{ '{:.0f}'.format(total_obtained) }}</td>
+      <td>{{ '{:.0f}'.format(total_max) }}</td>
+      <td>{{ '{:.2f}'.format(overall_pct) }}%</td>
+      <td>{{ overall_grade }}</td>
+    </tr>
+  </table>
+</div>
+
+<div class="card" style="text-align:center;">
+  <h3>🏆 Final Result</h3>
+  <p style="font-size:24px; margin:10px 0;">
+    Overall: <b>{{ '{:.2f}'.format(overall_pct) }}%</b> — Grade: <b>{{ overall_grade }}</b>
+  </p>
+  {% if overall_pct >= 33 %}
+    <p style="color:green; font-size:18px;">✅ PASSED</p>
+  {% else %}
+    <p style="color:red; font-size:18px;">❌ FAILED</p>
+  {% endif %}
+</div>
+{% else %}
+<div class="card"><p>No marks found for this student.</p></div>
+{% endif %}
+
+{% else %}
+<div class="card"><p>Enter a Roll No to generate report card.</p></div>
+{% endif %}
+{% endblock %}

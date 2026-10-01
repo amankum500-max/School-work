@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>💰 Fee Collection</h2>
+
+<form method="GET" class="card" style="display:flex; gap:8px;">
+  <input name="roll" value="{{ roll }}" placeholder="Enter Roll No">
+  <button>🔍 Search</button>
+</form>
+
+{% if bills %}
+<div class="card">
+  <table>
+    <tr><th>Bill</th><th>Month</th><th>Balance</th><th>Pay</th></tr>
+    {% for b in bills %}
+    <tr>
+      <td>{{ b['bill_no'] }}</td>
+      <td>{{ b['month'] }}</td>
+      <td>₹{{ '{:,.0f}'.format(b['balance']) }}</td>
+      <td>
+        <form method="POST" style="display:flex; gap:4px; flex-wrap:wrap;">
+          <input type="hidden" name="bill_id" value="{{ b['id'] }}">
+          <input name="amount" value="{{ b['balance'] }}" style="width:90px;">
+          <select name="mode" style="width:90px;">
+            <option>Cash</option><option>UPI</option><option>Online</option><option>Cheque</option>
+          </select>
+          <button class="green">Pay</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+{% endblock %}

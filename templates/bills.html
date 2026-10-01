@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>🧾 Bills — {{ month }}</h2>
+
+<div class="card">
+  <form method="POST" action="{{ url_for('generate_bills') }}" style="display:flex; gap:8px;">
+    <input name="month" value="{{ month }}" placeholder="YYYY-MM">
+    <button class="green">⚡ Generate Bills</button>
+  </form>
+</div>
+
+<div class="card">
+  <table>
+    <tr><th>Bill No</th><th>Roll</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th></tr>
+    {% for b in bills %}
+    <tr>
+      <td>{{ b['bill_no'] }}</td>
+      <td>{{ b['roll_no'] }}</td>
+      <td>₹{{ '{:,.0f}'.format(b['total']) }}</td>
+      <td>₹{{ '{:,.0f}'.format(b['paid']) }}</td>
+      <td>₹{{ '{:,.0f}'.format(b['balance']) }}</td>
+      <td>{{ b['status'] }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

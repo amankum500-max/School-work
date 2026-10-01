@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>🏆 Merit List</h2>
+
+<div class="card">
+  <form method="GET" style="display:flex; gap:8px;">
+    <input name="class_name" value="{{ class_name or '' }}" placeholder="Class (e.g. 10)">
+    <button>🔍 Show Merit List</button>
+  </form>
+</div>
+
+{% if merit %}
+<div class="card">
+  <h3>🥇 Class {{ class_name }} — Toppers</h3>
+  <table>
+    <tr><th>Rank</th><th>Roll</th><th>Name</th><th>Total</th><th>Percentage</th><th>Grade</th></tr>
+    {% for m in merit %}
+    <tr {% if loop.index == 1 %}style="background:#fff9c4;"{% endif %}>
+      <td>
+        {% if loop.index == 1 %}🥇
+        {% elif loop.index == 2 %}🥈
+        {% elif loop.index == 3 %}🥉
+        {% else %}{{ loop.index }}{% endif %}
+      </td>
+      <td>{{ m['roll_no'] }}</td>
+      <td>{{ m['name'] }}</td>
+      <td>{{ '{:.0f}'.format(m['total_obtained']) }}/{{ '{:.0f}'.format(m['total_max']) }}</td>
+      <td>{{ '{:.2f}'.format(m['pct']) }}%</td>
+      <td>{{ m['grade'] }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+{% endblock %}

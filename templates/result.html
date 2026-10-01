@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>📝 Marks Entry</h2>
+
+<div class="card">
+  <h3>➕ Add / Update Marks</h3>
+  <form method="POST" action="{{ url_for('add_marks') }}">
+    <input name="roll_no" placeholder="Student Roll No" required>
+    <input name="subject" placeholder="Subject" required>
+    <input name="exam" placeholder="Exam (Half Yearly / Annual)" required>
+    <input name="marks" type="number" placeholder="Marks Obtained" required>
+    <input name="total" type="number" placeholder="Total Marks" value="100" required>
+    <button class="green">💾 Save Marks</button>
+  </form>
+</div>
+
+<div class="card">
+  <h3>🔍 Search by Roll No</h3>
+  <form method="GET" style="display:flex; gap:8px;">
+    <input name="roll" value="{{ roll or '' }}" placeholder="Enter Roll No">
+    <button>🔍 Search</button>
+  </form>
+</div>
+
+{% if marks %}
+<div class="card">
+  <h3>📋 Marks for {{ roll }}</h3>
+  <table>
+    <tr><th>Subject</th><th>Exam</th><th>Obtained</th><th>Total</th><th>%</th><th>Grade</th></tr>
+    {% for m in marks %}
+    {% set pct = (m['marks']|float / m['total']|float * 100) if m['total']|float > 0 else 0 %}
+    <tr>
+      <td>{{ m['subject'] }}</td>
+      <td>{{ m['exam'] }}</td>
+      <td>{{ m['marks'] }}</td>
+      <td>{{ m['total'] }}</td>
+      <td>{{ '{:.1f}'.format(pct) }}%</td>
+      <td>
+        {% if pct >= 90 %}A+
+        {% elif pct >= 80 %}A
+        {% elif pct >= 70 %}B
+        {% elif pct >= 60 %}C
+        {% elif pct >= 50 %}D
+        {% else %}F{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+{% endblock %}

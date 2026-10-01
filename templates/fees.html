@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>💵 Fee Structure</h2>
+
+<div class="card">
+  <h3>➕ Set Fee Structure</h3>
+  <form method="POST" action="{{ url_for('save_fees') }}">
+    <input name="roll_no" placeholder="Roll No" required>
+    <input name="tuition_fee" type="number" placeholder="Tuition Fee" value="0">
+    <input name="transport_fee" type="number" placeholder="Transport Fee" value="0">
+    <input name="hostel_fee" type="number" placeholder="Hostel Fee" value="0">
+    <input name="admission_fee" type="number" placeholder="Admission Fee" value="0">
+    <input name="dress_fee" type="number" placeholder="Dress Fee" value="0">
+    <input name="exam_fee" type="number" placeholder="Exam Fee" value="0">
+    <input name="book_fee" type="number" placeholder="Book Fee" value="0">
+    <input name="notebook_fee" type="number" placeholder="Notebook Fee" value="0">
+    <input name="misc_fee" type="number" placeholder="Misc Fee" value="0">
+    <input name="admission_paid" type="number" placeholder="Admission Paid (0/1)" value="0">
+    <button class="green">💾 Save Fee Structure</button>
+  </form>
+</div>
+
+<div class="card">
+  <h3>📋 Fee Structures</h3>
+  <table>
+    <tr><th>Roll</th><th>Name</th><th>Class</th><th>Tuition</th><th>Transport</th><th>Hostel</th><th>Misc</th></tr>
+    {% for f in fees %}
+    <tr>
+      <td>{{ f['roll_no'] }}</td>
+      <td>{{ f['name'] }}</td>
+      <td>{{ f['class_name'] }}-{{ f['section'] }}</td>
+      <td>₹{{ '{:,.0f}'.format(f['tuition_fee'] or 0) }}</td>
+      <td>₹{{ '{:,.0f}'.format(f['transport_fee'] or 0) }}</td>
+      <td>₹{{ '{:,.0f}'.format(f['hostel_fee'] or 0) }}</td>
+      <td>₹{{ '{:,.0f}'.format(f['misc_fee'] or 0) }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

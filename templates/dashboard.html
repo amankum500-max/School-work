@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>📊 Dashboard</h2>
+<div class="stats" style="margin-top: 12px;">
+  <div class="stat"><div class="icon">🎓</div><div class="val">{{ students }}</div><div class="lbl">Students</div></div>
+  <div class="stat"><div class="icon">💰</div><div class="val">₹{{ '{:,.0f}'.format(collection) }}</div><div class="lbl">Collection (Month)</div></div>
+  <div class="stat"><div class="icon">💸</div><div class="val">₹{{ '{:,.0f}'.format(expense) }}</div><div class="lbl">Expense (Month)</div></div>
+  <div class="stat"><div class="icon">📈</div><div class="val">₹{{ '{:,.0f}'.format(profit) }}</div><div class="lbl">Net Profit</div></div>
+</div>
+
+<div class="card" style="margin-top: 14px;">
+  <h3>🚨 Pending Dues: ₹{{ '{:,.0f}'.format(total_due) }}</h3>
+</div>
+
+<div class="card">
+  <h3>🕐 Recent Payments</h3>
+  <table>
+    <tr><th>Receipt</th><th>Roll</th><th>Amount</th><th>Date</th></tr>
+    {% for r in recent %}
+    <tr>
+      <td>{{ r['receipt_no'] }}</td>
+      <td>{{ r['roll_no'] }}</td>
+      <td>₹{{ '{:,.0f}'.format(r['amount']) }}</td>
+      <td>{{ r['pay_date'] }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

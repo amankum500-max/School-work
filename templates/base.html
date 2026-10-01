@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>School Management</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+         background: #f4f6f9; color: #1e2a38; }
+  .topbar { background: #2c3e50; color: white; padding: 12px 16px;
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 100; }
+  .topbar h1 { font-size: 18px; }
+  .menu-btn { background: none; border: none; color: white; font-size: 26px;
+              cursor: pointer; }
+  .sidebar { position: fixed; top: 0; left: -260px; width: 240px; height: 100vh;
+             background: #2c3e50; color: white; padding-top: 60px; transition: 0.3s;
+             overflow-y: auto; z-index: 200; }
+  .sidebar.open { left: 0; }
+  .sidebar a { display: block; padding: 12px 20px; color: #ecf0f1;
+               text-decoration: none; font-size: 15px; border-bottom: 1px solid #34495e; }
+  .sidebar a:hover { background: #34495e; }
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+             z-index: 150; }
+  .overlay.open { display: block; }
+  .container { padding: 16px; max-width: 900px; margin: auto; }
+  .card { background: white; border-radius: 12px; padding: 16px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 14px; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .stat { background: white; border-radius: 12px; padding: 14px; text-align: center;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .stat .icon { font-size: 24px; }
+  .stat .val { font-size: 20px; font-weight: bold; margin: 4px 0; }
+  .stat .lbl { color: #7f8c8d; font-size: 12px; }
+  input, select, textarea { width: 100%; padding: 10px; border: 1px solid #dfe6e9;
+         border-radius: 8px; font-size: 15px; margin-bottom: 8px; }
+  button, .btn { background: #3498db; color: white; border: none; padding: 11px 18px;
+         border-radius: 8px; font-size: 15px; cursor: pointer; text-decoration: none;
+         display: inline-block; margin: 3px; }
+  button.green { background: #27ae60; } button.red { background: #c0392b; }
+  button.orange { background: #e67e22; } button.grey { background: #7f8c8d; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ecf0f1; }
+  th { background: #f8f9fa; font-weight: 600; }
+  .flash { padding: 12px; border-radius: 8px; margin-bottom: 12px; font-size: 14px; }
+  .flash.success { background: #d4edda; color: #155724; }
+  .flash.error   { background: #f8d7da; color: #721c24; }
+  @media (min-width: 768px) {
+    .menu-btn { display: none; }
+    .sidebar { left: 0; }
+    .container { margin-left: 260px; max-width: none; padding: 24px; }
+    .stats { grid-template-columns: repeat(4, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-btn" onclick="toggleMenu()">☰</button>
+  <h1>🏫 School Management</h1>
+  <span>👤 {{ session.name }}</span>
+</div>
+
+<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+
+<div class="sidebar" id="sidebar">
+  <a href="{{ url_for('dashboard') }}">📊 Dashboard</a>
+  <a href="{{ url_for('students') }}">🎓 Students</a>
+  <a href="{{ url_for('bills') }}">🧾 Bills</a>
+  <a href="{{ url_for('collect') }}">💰 Fee Collection</a>
+  <a href="{{ url_for('expenses') }}">💸 Expenses</a>
+  <a href="{{ url_for('reports') }}">📈 Reports</a>
+  <a href="{{ url_for('export_csv', table='students') }}">📤 Export Students</a>
+  <a href="{{ url_for('logout') }}">🚪 Logout</a>
+</div>
+
+<div class="container">
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+      <div class="flash {{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</div>
+
+<script>
+  function toggleMenu() {
+    document.getElementById("sidebar").classList.toggle("open");
+    document.getElementById("overlay").classList.toggle("open");
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>School Management</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="topbar">
+  <button class="menu-btn" onclick="toggleMenu()">☰</button>
+  <h1>🏫 School Management</h1>
+  <span>👤 {{ session.name }}</span>
+</div>
+
+<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+
+<div class="sidebar" id="sidebar">
+  <a href="{{ url_for('dashboard') }}">📊 Dashboard</a>
+  <a href="{{ url_for('students') }}">🎓 Students</a>
+  <a href="{{ url_for('fees') }}">💵 Fee Structure</a>
+  <a href="{{ url_for('bills') }}">🧾 Bills</a>
+  <a href="{{ url_for('collect') }}">💰 Fee Collection</a>
+  <a href="{{ url_for('defaulters') }}">🚨 Defaulters</a>
+  <a href="{{ url_for('expenses') }}">💸 Expenses</a>
+  <a href="{{ url_for('reports') }}">📈 Reports</a>
+  <a href="{{ url_for('result') }}">📝 Marks Entry</a>
+  <a href="{{ url_for('report_card') }}">📋 Report Card</a>
+  <a href="{{ url_for('merit_list') }}">🏆 Merit List</a>
+  <a href="{{ url_for('logout') }}">🚪 Logout</a>
+</div>
+
+<div class="container">
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+      <div class="flash {{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</div>
+
+<script>
+  function toggleMenu() {
+    document.getElementById("sidebar").classList.toggle("open");
+    document.getElementById("overlay").classList.toggle("open");
+  }
+</script>
+</body>
+</html>

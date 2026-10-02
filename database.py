@@ -92,7 +92,7 @@ def init_db():
     """)
 
     default_users = [
-        ("admin", "admin123", "Admin", "School Admin"),
+        ("Aman", "Aman852", "Admin", "School Admin"),
         ("accountant", "acc123", "Accountant", "Head Accountant"),
         ("teacher", "teach123", "Teacher", "Class Teacher"),
     ]

@@ -382,6 +382,4 @@ def notes():
     notes_data = db_all("SELECT * FROM notes ORDER BY id DESC")
     return render_template('notes.html', notes=notes_data)
 
-# ------------- HOMEWORK ROUTE -------------
-
    

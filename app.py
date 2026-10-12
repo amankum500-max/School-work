@@ -398,3 +398,23 @@ def homework():
     
     all_hw = db_all("SELECT * FROM homework ORDER BY due_date DESC")
     return render_template('homework.html', homework=all_hw)
+   @app.route('/homework', methods=['GET', 'POST'])
+@login_required
+def homework():
+    if request.method == 'POST':
+        class_name = request.form['class_name']
+        subject = request.form['subject']
+        description = request.form['description']
+        due_date = request.form['due_date']
+        
+        # Database mein save karein (Apne database.py wale function ka use karein)
+        db_run("INSERT INTO homework (class_name, subject, description, due_date) VALUES (%s, %s, %s, %s)", 
+               (class_name, subject, description, due_date))
+        
+        flash("Homework successfully add ho gaya!", "success")
+        return redirect(url_for('homework'))
+    
+    # Database se saara homework nikaalein
+    all_hw = db_all("SELECT * FROM homework ORDER BY due_date DESC")
+    return render_template('homework.html', homework=all_hw)
+   

@@ -368,18 +368,4 @@ init_db()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
-   # ------------- LIBRARY ROUTE -------------
-@app.route('/library')
-@login_required
-def library():
-    books = db_all("SELECT * FROM library_books ORDER BY id DESC")
-    return render_template('library.html', books=books)
-
-# ------------- ONLINE NOTES ROUTE -------------
-@app.route('/notes')
-@login_required
-def notes():
-    notes_data = db_all("SELECT * FROM notes ORDER BY id DESC")
-    return render_template('notes.html', notes=notes_data)
-
-   
+  

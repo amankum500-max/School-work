@@ -5,7 +5,7 @@ import psycopg2.extras
 from datetime import datetime
 
 # Supabase Connection String
-DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://postgres:Aman%40852125@db.nxdiowbskqvlrudxpbh.supabase.co:5432/postgres")
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 def get_db():
     conn = psycopg2.connect(DATABASE_URL)

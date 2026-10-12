@@ -2,8 +2,6 @@
 =====================================================
    🏫 SCHOOL MANAGEMENT - WEB VERSION (Flask)
    Mobile-friendly • Responsive • Modern UI
-   Includes: Students, Fees, Bills, Collect, Expenses,
-             Reports, Defaulters, Result, Report Card, Merit List
 =====================================================
 """
 from flask import (Flask, render_template, request, redirect,
@@ -40,7 +38,7 @@ def login():
     if request.method == "POST":
         u = request.form["username"].strip()
         p = request.form["password"].strip()
-        row = one("SELECT * FROM users WHERE username=? AND password=? AND active=1", (u, p))
+        row = one("SELECT * FROM users WHERE username=%s AND password=%s AND active=1", (u, p))
         if row:
             session["user"] = row["username"]
             session["role"] = row["role"]
@@ -59,11 +57,11 @@ def logout():
 @login_required
 def dashboard():
     students = one("SELECT COUNT(*) c FROM students")["c"]
-    total_due = one("SELECT IFNULL(SUM(balance),0) t FROM bills WHERE balance > 0")["t"]
+    total_due = one("SELECT COALESCE(SUM(balance),0) t FROM bills WHERE balance > 0")["t"]
     month = current_month()
-    collection = one("SELECT IFNULL(SUM(amount),0) t FROM payments WHERE pay_date LIKE ?",
+    collection = one("SELECT COALESCE(SUM(amount),0) t FROM payments WHERE pay_date LIKE %s",
                      (month + "%",))["t"]
-    expense = one("SELECT IFNULL(SUM(amount),0) t FROM expenses WHERE exp_date LIKE ?",
+    expense = one("SELECT COALESCE(SUM(amount),0) t FROM expenses WHERE exp_date LIKE %s",
                   (month + "%",))["t"]
     recent = db_all("SELECT receipt_no, roll_no, amount, pay_date FROM payments "
                     "ORDER BY id DESC LIMIT 8")
@@ -77,7 +75,7 @@ def dashboard():
 def students():
     q = request.args.get("q", "")
     if q:
-        rows = db_all("SELECT * FROM students WHERE name LIKE ? OR roll_no LIKE ? ORDER BY roll_no",
+        rows = db_all("SELECT * FROM students WHERE name LIKE %s OR roll_no LIKE %s ORDER BY roll_no",
                       (f"%{q}%", f"%{q}%"))
     else:
         rows = db_all("SELECT * FROM students ORDER BY roll_no")
@@ -91,7 +89,7 @@ def add_student():
         run("""INSERT INTO students
             (roll_no,name,father,mother,class_name,section,gender,dob,
              contact,parent_contact,address,admission_date,transport_route,hostel)
-            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (d["roll_no"], d["name"], d["father"], d["mother"],
              d["class_name"], d["section"], d["gender"], d["dob"],
              d["contact"], d["parent_contact"], d["address"],
@@ -104,7 +102,7 @@ def add_student():
 @app.route("/student/delete/<int:sid>")
 @login_required
 def delete_student(sid):
-    run("DELETE FROM students WHERE id=?", (sid,))
+    run("DELETE FROM students WHERE id=%s", (sid,))
     flash("🗑️ Student deleted.", "success")
     return redirect(url_for("students"))
 
@@ -123,7 +121,7 @@ def fees():
 def save_fees():
     d = request.form
     roll = d["roll_no"]
-    existing = one("SELECT id FROM student_fees WHERE roll_no=?", (roll,))
+    existing = one("SELECT id FROM student_fees WHERE roll_no=%s", (roll,))
     vals = (
         float(d.get("tuition_fee") or 0), float(d.get("transport_fee") or 0),
         float(d.get("hostel_fee") or 0), float(d.get("admission_fee") or 0),
@@ -134,14 +132,14 @@ def save_fees():
     )
     if existing:
         run("""UPDATE student_fees SET
-            tuition_fee=?, transport_fee=?, hostel_fee=?, admission_fee=?,
-            dress_fee=?, exam_fee=?, book_fee=?, notebook_fee=?, misc_fee=?,
-            admission_paid=? WHERE roll_no=?""", vals)
+            tuition_fee=%s, transport_fee=%s, hostel_fee=%s, admission_fee=%s,
+            dress_fee=%s, exam_fee=%s, book_fee=%s, notebook_fee=%s, misc_fee=%s,
+            admission_paid=%s WHERE roll_no=%s""", vals)
     else:
         run("""INSERT INTO student_fees
             (tuition_fee,transport_fee,hostel_fee,admission_fee,
              dress_fee,exam_fee,book_fee,notebook_fee,misc_fee,
-             admission_paid,roll_no) VALUES(?,?,?,?,?,?,?,?,?,?,?)""", vals)
+             admission_paid,roll_no) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""", vals)
     flash("✅ Fee structure saved!", "success")
     return redirect(url_for("fees"))
 
@@ -150,7 +148,7 @@ def save_fees():
 @login_required
 def bills():
     month = request.args.get("month", current_month())
-    rows = db_all("SELECT * FROM bills WHERE month=? ORDER BY roll_no", (month,))
+    rows = db_all("SELECT * FROM bills WHERE month=%s ORDER BY roll_no", (month,))
     return render_template("bills.html", bills=rows, month=month)
 
 @app.route("/bills/generate", methods=["POST"])
@@ -161,10 +159,10 @@ def generate_bills():
     created = skipped = 0
     for s in students:
         roll = s["roll_no"]
-        ex = one("SELECT id FROM bills WHERE roll_no=? AND month=?", (roll, month))
+        ex = one("SELECT id FROM bills WHERE roll_no=%s AND month=%s", (roll, month))
         if ex:
             skipped += 1; continue
-        fs = one("SELECT * FROM student_fees WHERE roll_no=?", (roll,))
+        fs = one("SELECT * FROM student_fees WHERE roll_no=%s", (roll,))
         if not fs:
             skipped += 1; continue
 
@@ -172,7 +170,7 @@ def generate_bills():
         tr = fs["transport_fee"] or 0
         ho = fs["hostel_fee"] or 0
         adm_paid = fs["admission_paid"] or 0
-        prev_added = one("SELECT IFNULL(SUM(admission),0) a FROM bills WHERE roll_no=?",
+        prev_added = one("SELECT COALESCE(SUM(admission),0) a FROM bills WHERE roll_no=%s",
                          (roll,))["a"]
         adm = 0 if (adm_paid or prev_added > 0) else (fs["admission_fee"] or 0)
         dr = 0 if prev_added > 0 else (fs["dress_fee"] or 0)
@@ -180,7 +178,7 @@ def generate_bills():
         bk = 0 if prev_added > 0 else (fs["book_fee"] or 0)
         nb = 0 if prev_added > 0 else (fs["notebook_fee"] or 0)
         ms = fs["misc_fee"] or 0
-        prev_due = one("SELECT IFNULL(SUM(balance),0) d FROM bills WHERE roll_no=? AND balance>0",
+        prev_due = one("SELECT COALESCE(SUM(balance),0) d FROM bills WHERE roll_no=%s AND balance>0",
                        (roll,))["d"]
         total = t + tr + ho + adm + dr + ex_f + bk + nb + ms + prev_due
         bill_no = f"B{month.replace('-','')}{roll}"
@@ -188,7 +186,7 @@ def generate_bills():
         run("""INSERT INTO bills
             (bill_no,roll_no,month,bill_date,tuition,transport,hostel,
              admission,dress,exam,book,notebook,misc,prev_due,total,paid,balance,status)
-            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (bill_no, roll, month, today(),
              t, tr, ho, adm, dr, ex_f, bk, nb, ms, prev_due,
              total, 0, total, "Unpaid"))
@@ -205,23 +203,23 @@ def collect():
         amt = float(request.form["amount"])
         mode = request.form["mode"]
         remark = request.form.get("remark", "")
-        bill = one("SELECT * FROM bills WHERE id=?", (bill_id,))
+        bill = one("SELECT * FROM bills WHERE id=%s", (bill_id,))
         new_paid = bill["paid"] + amt
         new_bal = bill["total"] - new_paid
         status = "Paid" if new_bal <= 0 else "Partial"
-        run("UPDATE bills SET paid=?,balance=?,status=? WHERE id=?",
+        run("UPDATE bills SET paid=%s,balance=%s,status=%s WHERE id=%s",
             (new_paid, new_bal, status, bill_id))
         rc = "R" + datetime.now().strftime("%Y%m%d%H%M%S")
         run("""INSERT INTO payments
             (receipt_no,roll_no,bill_id,amount,mode,pay_date,remark)
-            VALUES(?,?,?,?,?,?,?)""",
+            VALUES(%s,%s,%s,%s,%s,%s,%s)""",
             (rc, bill["roll_no"], bill_id, amt, mode, today(), remark))
         flash(f"✅ Payment ₹{amt:,.0f} recorded! Receipt: {rc}", "success")
         return redirect(url_for("collect"))
     roll = request.args.get("roll", "")
     rows = []
     if roll:
-        rows = db_all("SELECT * FROM bills WHERE roll_no=? AND balance>0 ORDER BY month", (roll,))
+        rows = db_all("SELECT * FROM bills WHERE roll_no=%s AND balance>0 ORDER BY month", (roll,))
     return render_template("collect.html", bills=rows, roll=roll)
 
 # ---------------- DEFAULTERS ----------------
@@ -242,7 +240,7 @@ def expenses():
     if request.method == "POST":
         d = request.form
         run("""INSERT INTO expenses (category,description,amount,exp_date,staff_id)
-               VALUES(?,?,?,?,?)""",
+               VALUES(%s,%s,%s,%s,%s)""",
             (d["category"], d["description"], d["amount"],
              d["exp_date"], d.get("staff_id", "")))
         flash("✅ Expense added!", "success")
@@ -257,8 +255,8 @@ def reports():
                      GROUP BY m ORDER BY m DESC LIMIT 12""")
     exp = db_all("""SELECT substr(exp_date,1,7) m, SUM(amount) a FROM expenses
                     GROUP BY m ORDER BY m DESC LIMIT 12""")
-    total_c = one("SELECT IFNULL(SUM(amount),0) t FROM payments")["t"]
-    total_e = one("SELECT IFNULL(SUM(amount),0) t FROM expenses")["t"]
+    total_c = one("SELECT COALESCE(SUM(amount),0) t FROM payments")["t"]
+    total_e = one("SELECT COALESCE(SUM(amount),0) t FROM expenses")["t"]
     return render_template("reports.html",
         coll=coll, exp=exp, total_c=total_c, total_e=total_e,
         profit=total_c - total_e)
@@ -270,21 +268,21 @@ def result():
     roll = request.args.get("roll", "")
     marks = []
     if roll:
-        marks = db_all("SELECT * FROM marks WHERE roll_no=? ORDER BY subject", (roll,))
+        marks = db_all("SELECT * FROM marks WHERE roll_no=%s ORDER BY subject", (roll,))
     return render_template("result.html", marks=marks, roll=roll)
 
 @app.route("/marks/add", methods=["POST"])
 @login_required
 def add_marks():
     d = request.form
-    existing = one("SELECT id FROM marks WHERE roll_no=? AND subject=? AND exam=?",
+    existing = one("SELECT id FROM marks WHERE roll_no=%s AND subject=%s AND exam=%s",
                    (d["roll_no"], d["subject"], d["exam"]))
     if existing:
-        run("UPDATE marks SET marks=?, total=? WHERE id=?",
+        run("UPDATE marks SET marks=%s, total=%s WHERE id=%s",
             (d["marks"], d["total"], existing["id"]))
         flash("✏️ Marks updated!", "success")
     else:
-        run("INSERT INTO marks (roll_no,subject,exam,marks,total) VALUES(?,?,?,?,?)",
+        run("INSERT INTO marks (roll_no,subject,exam,marks,total) VALUES(%s,%s,%s,%s,%s)",
             (d["roll_no"], d["subject"], d["exam"], d["marks"], d["total"]))
         flash("✅ Marks added!", "success")
     return redirect(url_for("result", roll=d["roll_no"]))
@@ -298,9 +296,9 @@ def report_card():
     total_obtained = total_max = overall_pct = 0
     overall_grade = "-"
     if roll:
-        student = one("SELECT * FROM students WHERE roll_no=?", (roll,))
+        student = one("SELECT * FROM students WHERE roll_no=%s", (roll,))
         if student:
-            rows = db_all("SELECT * FROM marks WHERE roll_no=? ORDER BY subject", (roll,))
+            rows = db_all("SELECT * FROM marks WHERE roll_no=%s ORDER BY subject", (roll,))
             for r in rows:
                 m = float(r["marks"] or 0)
                 t = float(r["total"] or 0)
@@ -328,11 +326,11 @@ def merit_list():
     if class_name:
         rows = db_all("""
             SELECT s.roll_no, s.name,
-                   SUM(CAST(m.marks AS REAL)) as total_obtained,
-                   SUM(CAST(m.total AS REAL)) as total_max
+                   SUM(CAST(m.marks AS FLOAT)) as total_obtained,
+                   SUM(CAST(m.total AS FLOAT)) as total_max
             FROM students s
             JOIN marks m ON s.roll_no = m.roll_no
-            WHERE s.class_name = ?
+            WHERE s.class_name = %s
             GROUP BY s.roll_no, s.name
             ORDER BY (total_obtained / total_max) DESC
         """, (class_name,))

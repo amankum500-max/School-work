@@ -368,3 +368,33 @@ init_db()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
+   # ------------- LIBRARY ROUTE -------------
+@app.route('/library')
+@login_required
+def library():
+    books = db_all("SELECT * FROM library_books ORDER BY id DESC")
+    return render_template('library.html', books=books)
+
+# ------------- ONLINE NOTES ROUTE -------------
+@app.route('/notes')
+@login_required
+def notes():
+    notes_data = db_all("SELECT * FROM notes ORDER BY id DESC")
+    return render_template('notes.html', notes=notes_data)
+
+# ------------- HOMEWORK ROUTE -------------
+@app.route('/homework', methods=['GET', 'POST'])
+@login_required
+def homework():
+    if request.method == 'POST':
+        class_name = request.form['class_name']
+        subject = request.form['subject']
+        desc = request.form['description']
+        due_date = request.form['due_date']
+        # Yahan database insert function use karein
+        # db_run("INSERT INTO homework (class_name, subject, description, due_date) VALUES (%s, %s, %s, %s)", (class_name, subject, desc, due_date))
+        flash("Homework added successfully!", "success")
+        return redirect(url_for('homework'))
+    
+    all_hw = db_all("SELECT * FROM homework ORDER BY due_date DESC")
+    return render_template('homework.html', homework=all_hw)

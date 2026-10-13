@@ -364,4 +364,12 @@ def export_csv(table):
                      download_name=f"{table}_{datetime.now():%Y%m%d}.csv")
 
 # ---------------- RUN ----------------
-init_db()
+init_db()@app.route("/force-login")
+def force_login():
+    # Temporary bypass
+    session["user"] = "Aman@500"
+    session["role"] = "admin" 
+    session["name"] = "Aman"
+    return "✅ Temporary Login ho gaya! Ab dashboard khol."
+   
+

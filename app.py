@@ -365,6 +365,11 @@ def export_csv(table):
 
 # ---------------- RUN ----------------
 init_db()
+@app.route('/library')
+@login_required
+def library():
+    books = db_all("SELECT * FROM library_books ORDER BY id DESC")
+    return render_template('library.html', books=books)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

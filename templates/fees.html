@@ -6,16 +6,19 @@
   <h3>➕ Set Fee Structure</h3>
   <form method="POST" action="{{ url_for('save_fees') }}">
     <input name="roll_no" placeholder="Roll No" required>
-    <input name="tuition_fee" type="number" placeholder="Tuition Fee" value="0">
-    <input name="transport_fee" type="number" placeholder="Transport Fee" value="0">
-    <input name="hostel_fee" type="number" placeholder="Hostel Fee" value="0">
-    <input name="admission_fee" type="number" placeholder="Admission Fee" value="0">
-    <input name="dress_fee" type="number" placeholder="Dress Fee" value="0">
-    <input name="exam_fee" type="number" placeholder="Exam Fee" value="0">
-    <input name="book_fee" type="number" placeholder="Book Fee" value="0">
-    <input name="notebook_fee" type="number" placeholder="Notebook Fee" value="0">
-    <input name="misc_fee" type="number" placeholder="Misc Fee" value="0">
-    <input name="admission_paid" type="number" placeholder="Admission Paid (0/1)" value="0">
+    
+    <!-- Saare value="0" hata diye gaye hain -->
+    <input name="tuition_fee" type="number" placeholder="Tuition Fee">
+    <input name="transport_fee" type="number" placeholder="Transport Fee">
+    <input name="hostel_fee" type="number" placeholder="Hostel Fee">
+    <input name="admission_fee" type="number" placeholder="Admission Fee">
+    <input name="dress_fee" type="number" placeholder="Dress Fee">
+    <input name="exam_fee" type="number" placeholder="Exam Fee">
+    <input name="book_fee" type="number" placeholder="Book Fee">
+    <input name="notebook_fee" type="number" placeholder="Notebook Fee">
+    <input name="misc_fee" type="number" placeholder="Misc Fee">
+    <input name="admission_paid" type="number" placeholder="Admission Paid (0/1)">
+    
     <button class="green">💾 Save Fee Structure</button>
   </form>
 </div>

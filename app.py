@@ -835,13 +835,28 @@ def ai_assistant():
         if not ai_model:
             return jsonify({"reply": "AI abhi available nahi hai. Render me GEMINI_API_KEY set kar."})
 
-        # Database se context nikaalo
         total_students = one("SELECT COUNT(*) c FROM students")["c"]
         total_due = one("SELECT COALESCE(SUM(balance),0) t FROM bills WHERE balance > 0")["t"]
         defaulters = db_all("""SELECT s.name, s.roll_no, b.balance FROM bills b
                              JOIN students s ON b.roll_no=s.roll_no
                              WHERE b.balance>0 ORDER BY b.balance DESC LIMIT 5""")
-        students_sample = db_all("SELECT roll_no, name, class_name, section FROM students LIMIT 20")
+        students_sample = db_all("SELECT roll_no, name, class_name, vi FROM students LIMIT 20")
 
         context = f"""
-        Aap ek School Management System ke AI assistant hain. Hinglish 
+        Aap ek School Management System ke AI assistant hain. Hinglish me short aur helpful jawab dijiye (max 100 words).
+
+        Current School Data:
+        - Total Students: {total_students}
+        - Total Pending Fees: Rs {total_due}
+        - Top Defaulters: {[dict(d) for d in defaulters]}
+        - Students Sample: {[dict(s) for s in students_sample]}
+
+        User ka Sawaal: {user_query}
+        """
+
+        try:
+            response = ai_model.generate_content(context)
+            return jsonify({"reply": response.text})
+        except Exception as e:
+            return jsonify({"reply": f"AI Error: {str(e)}"})
+    return render_template("ai_assistant.html")

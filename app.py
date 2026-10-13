@@ -365,8 +365,5 @@ def export_csv(table):
 
 # ---------------- RUN ----------------
 init_db()
-# 
-        return redirect(url_for('homework'))
-    
-    all_hw = db_all("SELECT * FROM homework ORDER BY due_date DESC")
-    return render_template('homework.html', homework=all_hw)
+
+        

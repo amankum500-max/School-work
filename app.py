@@ -365,3 +365,37 @@ def export_csv(table):
 
 # ---------------- RUN ----------------
 init_db()
+# ------------- LIBRARY ROUTE -------------
+@app.route('/library', methods=['GET', 'POST'])
+@login_required
+def library():
+    if request.method == 'POST':
+        book_name = request.form['book_name']
+        author = request.form['author']
+        total = request.form['total_copies']
+        # Apne database insert function ka naam yahan use karein (jaise db_run ya run)
+        db_run("INSERT INTO library_books (book_name, author, total_copies, available_copies) VALUES (%s, %s, %s, %s)", 
+               (book_name, author, total, total))
+        flash("Book added successfully!", "success")
+        return redirect(url_for('library'))
+    
+    books = db_all("SELECT * FROM library_books ORDER BY id DESC")
+    return render_template('library.html', books=books)
+
+# ------------- HOMEWORK ROUTE -------------
+@app.route('/homework', methods=['GET', 'POST'])
+@login_required
+def homework():
+    if request.method == 'POST':
+        class_name = request.form['class_name']
+        subject = request.form['subject']
+        desc = request.form['description']
+        due_date = request.form['due_date']
+        
+        db_run("INSERT INTO homework (class_name, subject, description, due_date) VALUES (%s, %s, %s, %s)", 
+               (class_name, subject, desc, due_date))
+        flash("Homework successfully add ho gaya!", "success")
+        return redirect(url_for('homework'))
+    
+    all_hw = db_all("SELECT * FROM homework ORDER BY due_date DESC")
+    return render_template('homework.html', homework=all_hw)

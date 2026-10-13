@@ -365,5 +365,42 @@ def export_csv(table):
 
 # ---------------- RUN ----------------
 init_db()
+from werkzeug.security import generate_password_hash, check_password_hash
 
+@app.route("/change-password", methods=["GET", "POST"])
+@login_required
+def change_password():
+    if request.method == "POST":
+        old_pass = request.form["old_password"].strip()
+        new_pass = request.form["new_password"].strip()
+        confirm_pass = request.form["confirm_password"].strip()
+        username = session["user"]
+
+        # 1. Database se current user ka data nikaalo
+        row = one("SELECT * FROM users WHERE username=%s", (username,))
+        
+        if not row:
+            flash("User not found!", "error")
+            return redirect(url_for("login"))
+
+        # 2. Purana password check karo (Agar hash me save hai toh check_password_hash use karo)
+        # Yahan main maan raha hu ki plain text me save hai, agar hash hai toh check_password_hash(row['password'], old_pass) use kar
+        if row["password"] != old_pass: 
+            flash("Purana password galat hai!", "error")
+            return render_template("change_password.html")
+
+        # 3. Naya password confirm password se match karo
+        if new_pass != confirm_pass:
+            flash("Naya password aur confirm password match nahi kar rahe!", "error")
+            return render_template("change_password.html")
+
+        # 4. Naya password hash karke database me update karo (Security ke liye hash karna zaroori hai)
+        hashed_new_pass = generate_password_hash(new_pass)
+        execute("UPDATE users SET password=%s WHERE username=%s", (hashed_new_pass, username))
+
+        flash("Password successfully change ho gaya! Kripya dobara login karein.", "success")
+        session.clear()
+        return redirect(url_for("login"))
+
+    return render_template("change_password.html")
         

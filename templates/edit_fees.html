@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>✏️ Edit Fee Structure</h2>
+<div class="card">
+  <form method="POST">
+    <label>Roll No (Locked):</label>
+    <input name="roll_no" value="{{ fee['roll_no'] }}" readonly style="background:#eee;">
+    
+    <label>Tuition Fee:</label>
+    <input name="tuition_fee" type="number" value="{{ fee['tuition_fee'] or '' }}" placeholder="0">
+    <label>Transport Fee:</label>
+    <input name="transport_fee" type="number" value="{{ fee['transport_fee'] or '' }}" placeholder="0">
+    <label>Hostel Fee:</label>
+    <input name="hostel_fee" type="number" value="{{ fee['hostel_fee'] or '' }}" placeholder="0">
+    <label>Admission Fee:</label>
+    <input name="admission_fee" type="number" value="{{ fee['admission_fee'] or '' }}" placeholder="0">
+    <label>Dress Fee:</label>
+    <input name="dress_fee" type="number" value="{{ fee['dress_fee'] or '' }}" placeholder="0">
+    <label>Exam Fee:</label>
+    <input name="exam_fee" type="number" value="{{ fee['exam_fee'] or '' }}" placeholder="0">
+    <label>Book Fee:</label>
+    <input name="book_fee" type="number" value="{{ fee['book_fee'] or '' }}" placeholder="0">
+    <label>Notebook Fee:</label>
+    <input name="notebook_fee" type="number" value="{{ fee['notebook_fee'] or '' }}" placeholder="0">
+    <label>Misc Fee:</label>
+    <input name="misc_fee" type="number" value="{{ fee['misc_fee'] or '' }}" placeholder="0">
+    <label>Back Dues:</label>
+    <input name="back_dues" type="number" value="{{ fee['back_dues'] or '' }}" placeholder="0">
+    
+    <br><br>
+    <button class="green">🔄 Update</button>
+    <a href="{{ url_for('fees') }}" class="btn" style="background:grey;">❌ Cancel</a>
+  </form>
+</div>
+{% endblock %}

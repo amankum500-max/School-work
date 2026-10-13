@@ -46,5 +46,17 @@
     document.getElementById("overlay").classList.toggle("open");
   }
 </script>
+  <script>
+    function toggleMenu() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        
+        // 'open' class add/remove karega sidebar me
+        sidebar.classList.toggle('open');
+        // 'active' class add/remove karega overlay me
+        overlay.classList.toggle('active');
+    }
+</script>
+</body>
 </body>
 </html>

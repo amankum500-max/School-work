@@ -40,29 +40,15 @@
   {% block content %}{% endblock %}
 </div>
 
-</div> <!-- Container end -->
-
 <script>
     function toggleMenu() {
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('overlay');
         
         sidebar.classList.toggle('open');
-        overlay.classList.toggle('open'); // Yahan 'active' ki jagah 'open' kar diya
+        overlay.classList.toggle('open'); 
     }
 </script>
-</body>
-</html>
-  <script>
-    function toggleMenu() {
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('overlay');
-        
-        // 'open' class add/remove karega sidebar me
-        sidebar.classList.toggle('open');
-        // 'active' class add/remove karega overlay me
-        overlay.classList.toggle('active');
-    }
-</script>
+
 </body>
 </html>

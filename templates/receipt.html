@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Receipt - {{ student['name'] }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+        .receipt-box { border: 2px solid #2c3e50; padding: 20px; border-radius: 10px; }
+        .header { text-align: center; border-bottom: 2px dashed #ccc; padding-bottom: 10px; margin-bottom: 20px; }
+        .header h1 { margin: 0; color: #2c3e50; }
+        .details { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background: #f4f6f9; }
+        .total { text-align: right; font-size: 18px; font-weight: bold; color: #27ae60; }
+        .footer { text-align: center; font-size: 12px; color: #7f8c8d; margin-top: 30px; }
+        @media print { .no-print { display: none; } }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="text-align: right; margin-bottom: 10px;">
+        <button onclick="window.print()" style="padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">🖨️ Print</button>
+        <a href="{{ url_for('fees') }}" style="padding: 10px 20px; background: #7f8c8d; color: white; text-decoration: none; border-radius: 5px;">Back</a>
+    </div>
+    <div class="receipt-box">
+        <div class="header">
+            <h1>🏫 School Management</h1>
+            <p>Fee Structure Receipt</p>
+        </div>
+        <div class="details">
+            <div><strong>Student:</strong> {{ student['name'] }}<br><strong>Roll No:</strong> {{ student['roll_no'] }}<br><strong>Class:</strong> {{ student['class_name'] }}-{{ student['section'] }}</div>
+            <div><strong>Receipt No:</strong> REC-{{ student['roll_no'] }}</div>
+        </div>
+        <table>
+            <tr><th>Particulars</th><th>Amount (₹)</th></tr>
+            <tr><td>Tuition Fee</td><td>{{ fee['tuition_fee'] or 0 }}</td></tr>
+            <tr><td>Transport Fee</td><td>{{ fee['transport_fee'] or 0 }}</td></tr>
+            <tr><td>Hostel Fee</td><td>{{ fee['hostel_fee'] or 0 }}</td></tr>
+            <tr><td>Admission Fee</td><td>{{ fee['admission_fee'] or 0 }}</td></tr>
+            <tr><td>Dress Fee</td><td>{{ fee['dress_fee'] or 0 }}</td></tr>
+            <tr><td>Exam Fee</td><td>{{ fee['exam_fee'] or 0 }}</td></tr>
+            <tr><td>Book Fee</td><td>{{ fee['book_fee'] or 0 }}</td></tr>
+            <tr><td>Notebook Fee</td><td>{{ fee['notebook_fee'] or 0 }}</td></tr>
+            <tr><td>Misc Fee</td><td>{{ fee['misc_fee'] or 0 }}</td></tr>
+            <tr><td style="color: #e74c3c;">Back Dues</td><td style="color: #e74c3c;">{{ fee['back_dues'] or 0 }}</td></tr>
+        </table>
+        <div class="total">
+            Grand Total: ₹{{ '{:,.0f}'.format((fee['tuition_fee'] or 0) + (fee['transport_fee'] or 0) + (fee['hostel_fee'] or 0) + (fee['admission_fee'] or 0) + (fee['dress_fee'] or 0) + (fee['exam_fee'] or 0) + (fee['book_fee'] or 0) + (fee['notebook_fee'] or 0) + (fee['misc_fee'] or 0) + (fee['back_dues'] or 0)) }}
+        </div>
+        <div class="footer"><p>Yeh ek computer generated receipt hai. Thank you!</p></div>
+    </div>
+</body>
+</html>

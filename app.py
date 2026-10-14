@@ -8,7 +8,7 @@ from flask import (Flask, render_template, request, redirect,
                    url_for, session, flash, send_file)
 from functools import wraps
 import csv, io, os
-from datetime import datetime
+from datetime import datetime, timedelta
 from database import init_db, run, all as db_all, one, current_month, today
 
 app = Flask(__name__)

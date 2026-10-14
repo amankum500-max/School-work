@@ -56,19 +56,95 @@ def logout():
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    students = one("SELECT COUNT(*) c FROM students")["c"]
+    # 1. Basic & Lifetime Stats
+    students_count = one("SELECT COUNT(*) c FROM students")["c"]
     total_due = one("SELECT COALESCE(SUM(balance),0) t FROM bills WHERE balance > 0")["t"]
-    month = current_month()
-    collection = one("SELECT COALESCE(SUM(amount),0) t FROM payments WHERE pay_date LIKE %s",
-                     (month + "%",))["t"]
-    expense = one("SELECT COALESCE(SUM(amount),0) t FROM expenses WHERE exp_date LIKE %s",
-                  (month + "%",))["t"]
-    recent = db_all("SELECT receipt_no, roll_no, amount, pay_date FROM payments "
-                    "ORDER BY id DESC LIMIT 8")
-    return render_template("dashboard.html",
-        students=students, total_due=total_due, collection=collection,
-        expense=expense, profit=collection - expense, recent=recent)
+    lifetime_revenue = one("SELECT COALESCE(SUM(amount),0) t FROM payments")["t"]
+    lifetime_expense = one("SELECT COALESCE(SUM(amount),0) t FROM expenses")["t"]
+    lifetime_profit = lifetime_revenue - lifetime_expense
 
+    # 2. Current Month & Today Stats
+    month = current_month()
+    today_str = today()
+    today_collection = one("SELECT COALESCE(SUM(amount),0) t FROM payments WHERE pay_date = %s", (today_str,))["t"]
+    current_collection = one("SELECT COALESCE(SUM(amount),0) t FROM payments WHERE pay_date LIKE %s", (month + "%",))["t"]
+    
+    # 3. Monthly Target Progress (Aap yahan target change kar sakte hain)
+    monthly_target = 100000 # Example: Rs 1 Lakh ka target
+    progress_pct = min(100, (current_collection / monthly_target * 100)) if monthly_target > 0 else 0
+
+    # 4. Fee Status & Top Defaulters
+    paid_count = one("SELECT COUNT(*) c FROM bills WHERE status='Paid'")["c"]
+    partial_count = one("SELECT COUNT(*) c FROM bills WHERE status='Partial'")["c"]
+    unpaid_count = one("SELECT COUNT(*) c FROM bills WHERE status='Unpaid' OR status IS NULL")["c"]
+    fee_status = {"paid": paid_count, "partial": partial_count, "unpaid": unpaid_count}
+
+    top_defaulters = db_all("""
+        SELECT s.id as student_id, s.name, s.roll_no, s.class_name, SUM(b.balance) as total_balance
+        FROM bills b JOIN students s ON b.roll_no = s.roll_no
+        WHERE b.balance > 0
+        GROUP BY s.id, s.name, s.roll_no, s.class_name
+        ORDER BY total_balance DESC LIMIT 5
+    """)
+
+    # 5. Class Strength & Top Performers
+    class_strength = db_all("SELECT class_name, COUNT(*) as count FROM students GROUP BY class_name ORDER BY class_name")
+    top_performers_raw = db_all("""
+        SELECT s.name, s.roll_no, s.class_name, SUM(CAST(m.marks AS FLOAT)) as total_obtained, SUM(CAST(m.total AS FLOAT)) as total_max
+        FROM students s JOIN marks m ON s.roll_no = m.roll_no
+        GROUP BY s.name, s.roll_no, s.class_name ORDER BY (total_obtained / total_max) DESC LIMIT 3
+    """)
+    performers_list = []
+    for p in top_performers_raw:
+        pct = (p['total_obtained'] / p['total_max'] * 100) if p['total_max'] > 0 else 0
+        performers_list.append({"name": p['name'], "roll_no": p['roll_no'], "class_name": p['class_name'], "pct": round(pct, 1)})
+
+    # 6. Birthdays & Recent Activities
+    today_date = datetime.now().strftime("%m-%d")
+    birthdays = db_all("SELECT name, roll_no, class_name, dob FROM students WHERE substr(dob, 6, 5) = %s", (today_date,))
+    recent_payments = db_all("SELECT receipt_no, roll_no, amount, pay_date FROM payments ORDER BY id DESC LIMIT 5")
+    recent_admissions = db_all("SELECT name, roll_no, class_name, admission_date FROM students ORDER BY id DESC LIMIT 5")
+
+    # 7. Last 6 Months Trend
+    monthly_trend = []
+    for i in range(5, -1, -1):
+        target_date = datetime.now() - timedelta(days=i*30)
+        m_str = target_date.strftime("%Y-%m")
+        coll = one("SELECT COALESCE(SUM(amount),0) t FROM payments WHERE pay_date LIKE %s", (m_str + "%",))["t"]
+        exp = one("SELECT COALESCE(SUM(amount),0) t FROM expenses WHERE exp_date LIKE %s", (m_str + "%",))["t"]
+        monthly_trend.append({"month": target_date.strftime("%b %Y"), "collection": coll, "expense": exp})
+
+    # 8. 🤖 AI PRINCIPAL'S BRIEFING + PREDICTION + FORECAST
+    ai_insight = "AI summary loading..."
+    if ai_model:
+        prompt = f"""
+        Aap ek School ke Principal ke AI assistant aur Data Scientist hain. Niche diye gaye data ka analysis karke 3 hisso me jawab dijiye:
+        
+        PART 1 - DAILY BRIEFING: 2 lines ka sharp summary (Hinglish me).
+        PART 2 - PREDICTIVE RISK: Top defaulters ko dekh kar predict kijiye ki agle mahine kaunse students default karne ke sabse zyada chance hain aur kyun.
+        PART 3 - REVENUE FORECAST: Pichle 6 mahine ke collection trend {[m['collection'] for m in monthly_trend]} ko dekh kar agle mahine ka expected revenue predict kijiye (Rs me) aur 1 line ki advice dijiye.
+        
+        Data:
+        - Aaj ka Collection: Rs {today_collection}
+        - Lifetime Net Profit: Rs {lifetime_profit}
+        - Total Pending Fees: Rs {total_due}
+        - Top Defaulters: {[f"{d['name']} (Rs {d['total_balance']})" for d in top_defaulters]}
+        """
+        try:
+            ai_insight = ai_model.generate_content(prompt).text
+        except Exception as e:
+            ai_insight = "AI Briefing abhi available nahi hai. API Key check karein."
+
+    return render_template("dashboard.html",
+        students=students_count, total_due=total_due,
+        today_collection=today_collection, lifetime_profit=lifetime_profit,
+        fee_status=fee_status, top_defaulters=top_defaulters,
+        class_strength=class_strength, performers_list=performers_list,
+        birthdays=birthdays, recent=recent_payments, recent_admissions=recent_admissions,
+        monthly_trend=monthly_trend, ai_insight=ai_insight,
+        monthly_target=monthly_target, progress_pct=progress_pct,
+        current_collection=current_collection
+       )
 # ---------------- STUDENTS ----------------
 @app.route("/students")
 @login_required

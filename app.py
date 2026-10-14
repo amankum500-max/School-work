@@ -903,7 +903,10 @@ else:
 
 # Model initialize karein
 model = genai.GenerativeModel('gemini-1.5-flash')
-
+@app.route('/')
+def home():
+    return "Backend is running successfully! 🚀"
+   
 @app.route('/api/chat', methods=['POST'])
 def chat():
     try:

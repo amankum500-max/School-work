@@ -387,6 +387,7 @@ def analytics():
         monthly_data=monthly_data, class_dist=class_dist,
         top_payers=top_payers, yearly_total=yearly_total,
         pending_count=pending_count)
+   
 # ======================================================
 # ---------------- RUN ----------------
 init_db()

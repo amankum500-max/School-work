@@ -3,41 +3,83 @@
 <h2>💵 Fee Structure</h2>
 
 <div class="card">
-  <h3>➕ Set Fee Structure</h3>
+  <h3>➕ Set / Update Fee Structure</h3>
   <form method="POST" action="{{ url_for('save_fees') }}">
     <input name="roll_no" placeholder="Roll No" required>
-    
-    <!-- Saare value="0" hata diye gaye hain -->
-    <input name="tuition_fee" type="number" placeholder="Tuition Fee">
-    <input name="transport_fee" type="number" placeholder="Transport Fee">
-    <input name="hostel_fee" type="number" placeholder="Hostel Fee">
-    <input name="admission_fee" type="number" placeholder="Admission Fee">
-    <input name="dress_fee" type="number" placeholder="Dress Fee">
-    <input name="exam_fee" type="number" placeholder="Exam Fee">
-    <input name="book_fee" type="number" placeholder="Book Fee">
-    <input name="notebook_fee" type="number" placeholder="Notebook Fee">
-    <input name="misc_fee" type="number" placeholder="Misc Fee">
+    <input name="tuition_fee" type="number" placeholder="Tuition Fee" oninput="calculateTotal()">
+    <input name="transport_fee" type="number" placeholder="Transport Fee" oninput="calculateTotal()">
+    <input name="hostel_fee" type="number" placeholder="Hostel Fee" oninput="calculateTotal()">
+    <input name="admission_fee" type="number" placeholder="Admission Fee" oninput="calculateTotal()">
+    <input name="dress_fee" type="number" placeholder="Dress Fee" oninput="calculateTotal()">
+    <input name="exam_fee" type="number" placeholder="Exam Fee" oninput="calculateTotal()">
+    <input name="book_fee" type="number" placeholder="Book Fee" oninput="calculateTotal()">
+    <input name="notebook_fee" type="number" placeholder="Notebook Fee" oninput="calculateTotal()">
+    <input name="misc_fee" type="number" placeholder="Misc Fee" oninput="calculateTotal()">
+    <input name="back_dues" type="number" placeholder="Back Dues (Purana Baaki)" oninput="calculateTotal()">
     <input name="admission_paid" type="number" placeholder="Admission Paid (0/1)">
     
+    <h3 style="color: #27ae60; margin: 10px 0;">Total: ₹<span id="totalAmount">0</span></h3>
     <button class="green">💾 Save Fee Structure</button>
   </form>
 </div>
 
 <div class="card">
-  <h3>📋 Fee Structures</h3>
-  <table>
-    <tr><th>Roll</th><th>Name</th><th>Class</th><th>Tuition</th><th>Transport</th><th>Hostel</th><th>Misc</th></tr>
-    {% for f in fees %}
-    <tr>
-      <td>{{ f['roll_no'] }}</td>
-      <td>{{ f['name'] }}</td>
-      <td>{{ f['class_name'] }}-{{ f['section'] }}</td>
-      <td>₹{{ '{:,.0f}'.format(f['tuition_fee'] or 0) }}</td>
-      <td>₹{{ '{:,.0f}'.format(f['transport_fee'] or 0) }}</td>
-      <td>₹{{ '{:,.0f}'.format(f['hostel_fee'] or 0) }}</td>
-      <td>₹{{ '{:,.0f}'.format(f['misc_fee'] or 0) }}</td>
-    </tr>
-    {% endfor %}
-  </table>
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+    <h3>📋 Fee Structures</h3>
+    {% if session.role == 'admin' %}
+    <a href="{{ url_for('run_arrears_update') }}" class="btn" style="background:#8e44ad; font-size: 13px;" onclick="return confirm('Pichle mahine ka Back Dues update karna hai?');">⚙️ Run Monthly Arrears</a>
+    {% endif %}
+  </div>
+  
+  <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="🔍 Search by Roll No or Name...">
+  
+  <div style="overflow-x: auto;">
+    <table id="feesTable">
+      <tr>
+        <th>Roll</th><th>Name</th><th>Class</th><th>Tuition</th><th>Back Dues</th><th>Total</th><th>Actions</th>
+      </tr>
+      {% for f in fees %}
+      <tr>
+        <td>{{ f['roll_no'] }}</td>
+        <td>{{ f['name'] }}</td>
+        <td>{{ f['class_name'] }}-{{ f['section'] }}</td>
+        <td>₹{{ '{:,.0f}'.format(f['tuition_fee'] or 0) }}</td>
+        <td style="color: #e74c3c; font-weight: bold;">₹{{ '{:,.0f}'.format(f['back_dues'] or 0) }}</td>
+        <td><strong>₹{{ '{:,.0f}'.format((f['tuition_fee'] or 0) + (f['transport_fee'] or 0) + (f['hostel_fee'] or 0) + (f['admission_fee'] or 0) + (f['dress_fee'] or 0) + (f['exam_fee'] or 0) + (f['book_fee'] or 0) + (f['notebook_fee'] or 0) + (f['misc_fee'] or 0) + (f['back_dues'] or 0)) }}</strong></td>
+        <td>
+          <a href="{{ url_for('edit_fees', roll_no=f['roll_no']) }}" class="btn" style="background:#f39c12; padding: 5px 10px; font-size: 12px;">✏️</a>
+          <a href="{{ url_for('delete_fees', roll_no=f['roll_no']) }}" class="btn" style="background:#e74c3c; padding: 5px 10px; font-size: 12px;" onclick="return confirm('Delete karna hai?');">🗑️</a>
+          <a href="{{ url_for('receipt', roll_no=f['roll_no']) }}" target="_blank" class="btn" style="background:#3498db; padding: 5px 10px; font-size: 12px;">🧾</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
 </div>
+
+<script>
+  function calculateTotal() {
+    const inputs = document.querySelectorAll('input[type="number"]');
+    let total = 0;
+    inputs.forEach(input => {
+      if (input.name !== 'admission_paid') { total += parseFloat(input.value) || 0; }
+    });
+    document.getElementById('totalAmount').innerText = total.toLocaleString('en-IN');
+  }
+  function searchTable() {
+    let filter = document.getElementById("searchInput").value.toUpperCase();
+    let tr = document.getElementById("feesTable").getElementsByTagName("tr");
+    for (let i = 1; i < tr.length; i++) {
+      let tdRoll = tr[i].getElementsByTagName("td")[0];
+      let tdName = tr[i].getElementsByTagName("td")[1];
+      if (tdRoll || tdName) {
+        let rollValue = tdRoll.textContent || tdRoll.innerText;
+        let nameValue = tdName.textContent || tdName.innerText;
+        if (rollValue.toUpperCase().indexOf(filter) > -1 || nameValue.toUpperCase().indexOf(filter) > -1) {
+          tr[i].style.display = "";
+        } else { tr[i].style.display = "none"; }
+      }
+    }
+  }
+</script>
 {% endblock %}

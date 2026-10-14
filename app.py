@@ -90,9 +90,13 @@ def dashboard():
     # 5. Class Strength & Top Performers
     class_strength = db_all("SELECT class_name, COUNT(*) as count FROM students GROUP BY class_name ORDER BY class_name")
     top_performers_raw = db_all("""
-        SELECT s.name, s.roll_no, s.class_name, SUM(CAST(m.marks AS FLOAT)) as total_obtained, SUM(CAST(m.total AS FLOAT)) as total_max
-        FROM students s JOIN marks m ON s.roll_no = m.roll_no
-        GROUP BY s.name, s.roll_no, s.class_name ORDER BY (SUM(CAST(m.marks AS FLOAT)) / NULLIF(SUM(CAST(m.total AS FLOAT)), 0)) DESC LIMIT 3
+    SELECT s.name, s.roll_no, s.class_name, 
+           SUM(CAST(m.marks AS FLOAT)) as total_obtained, 
+           SUM(CAST(m.total AS FLOAT)) as total_max
+    FROM students s JOIN marks m ON s.roll_no = m.roll_no
+    GROUP BY s.name, s.roll_no, s.class_name
+    ORDER BY (SUM(CAST(m.marks AS FLOAT)) / NULLIF(SUM(CAST(m.total AS FLOAT)), 0)) DESC LIMIT 3
+""")
     performers_list = []
     for p in top_performers_raw:
         pct = (p['total_obtained'] / p['total_max'] * 100) if p['total_max'] > 0 else 0

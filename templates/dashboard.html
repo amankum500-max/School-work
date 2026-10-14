@@ -1,29 +1,389 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>📊 Dashboard</h2>
-<div class="stats" style="margin-top: 12px;">
-  <div class="stat"><div class="icon">🎓</div><div class="val">{{ students }}</div><div class="lbl">Students</div></div>
-  <div class="stat"><div class="icon">💰</div><div class="val">₹{{ '{:,.0f}'.format(collection) }}</div><div class="lbl">Collection (Month)</div></div>
-  <div class="stat"><div class="icon">💸</div><div class="val">₹{{ '{:,.0f}'.format(expense) }}</div><div class="lbl">Expense (Month)</div></div>
-  <div class="stat"><div class="icon">📈</div><div class="val">₹{{ '{:,.0f}'.format(profit) }}</div><div class="lbl">Net Profit</div></div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    /* CSS Variables for Theme */
+    :root { --bg-color: #f0f2f5; --text-color: #333; --card-bg: #fff; --border-color: #e9ecef; }
+    body.dark-mode { --bg-color: #121212; --text-color: #f1f1f1; --card-bg: #1e1e1e; --border-color: #333; }
+    
+    body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background 0.3s, color 0.3s; }
+    .stat-card, .widget-card { border-radius: 16px; border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.04); transition: all 0.3s ease; background: var(--card-bg); color: var(--text-color); }
+    .stat-card:hover, .widget-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+    
+    /* AI Box */
+    .ai-box { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; border-radius: 16px; box-shadow: 0 10px 25px rgba(30, 60, 114, 0.3); position: relative; overflow: hidden; }
+    .ai-box::before { content: ''; position: absolute; top: -50%; right: -50%; width: 100%; height: 100%; background: rgba(255,255,255,0.1); border-radius: 50%; }
+    .ai-content { position: relative; z-index: 2; font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; }
+    
+    /* Progress Bar */
+    .custom-progress { height: 12px; border-radius: 10px; background: #e9ecef; overflow: hidden; }
+    .custom-progress-bar { height: 100%; border-radius: 10px; background: linear-gradient(90deg, #198754, #20c997); transition: width 1s ease-in-out; }
+
+    /* Tables */
+    .table-custom th { border-top: none; font-weight: 600; color: #6c757d; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; }
+    .table-custom td { vertical-align: middle; font-size: 0.9rem; color: var(--text-color); }
+    .whatsapp-btn { background-color: #25D366; color: white; border: none; border-radius: 8px; padding: 5px 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+    .whatsapp-btn:hover { background-color: #128C7E; transform: scale(1.05); }
+
+    /* Widgets */
+    .birthday-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; margin-right: 15px; }
+    .timeline { position: relative; padding-left: 20px; }
+    .timeline::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--border-color); }
+    .timeline-item { position: relative; margin-bottom: 15px; }
+    .timeline-item::before { content: ''; position: absolute; left: -24px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: #667eea; border: 2px solid var(--card-bg); }
+
+    /* Floating AI Chat */
+    .ai-chat-widget { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
+    .ai-chat-btn { width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; font-size: 1.8rem; box-shadow: 0 5px 15px rgba(118, 75, 162, 0.4); cursor: pointer; transition: 0.3s; }
+    .ai-chat-btn:hover { transform: scale(1.1); }
+    .ai-chat-window { width: 350px; height: 450px; background: var(--card-bg); border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: none; flex-direction: column; overflow: hidden; position: absolute; bottom: 80px; right: 0; }
+    .ai-chat-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+    .ai-chat-body { flex: 1; padding: 15px; overflow-y: auto; background: var(--bg-color); }
+    .ai-chat-footer { padding: 10px; background: var(--card-bg); border-top: 1px solid var(--border-color); display: flex; align-items: center; }
+    .chat-msg { margin-bottom: 10px; max-width: 80%; padding: 10px 15px; border-radius: 15px; font-size: 0.9rem; }
+    .chat-msg.user { background: #dcf8c6; color: #000; margin-left: auto; border-bottom-right-radius: 2px; }
+    .chat-msg.ai { background: #e9ecef; color: #000; margin-right: auto; border-bottom-left-radius: 2px; }
+    .mic-btn { background: #dc3545; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin-right: 8px; cursor: pointer; transition: 0.2s; }
+    .mic-btn:hover { transform: scale(1.1); }
+</style>
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h2 class="fw-bold mb-0">📊 Dashboard Overview</h2>
+            <span class="text-muted small">Aaj ka din shubh ho, {{ session.name }}!</span>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div id="liveClock" class="fw-bold text-primary"></div>
+            <button class="btn btn-outline-secondary btn-sm rounded-pill" onclick="toggleDarkMode()">🌙 Dark Mode</button>
+            <a href="{{ url_for('students') }}" class="btn btn-primary btn-sm rounded-pill px-3">+ Add Student</a>
+            <a href="{{ url_for('collect') }}" class="btn btn-success btn-sm rounded-pill px-3">💰 Collect Fees</a>
+        </div>
+    </div>
+
+    <!-- 1. Top Stat Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1 text-uppercase small fw-bold">Total Students</h6>
+                        <h3 class="fw-bold mb-0 text-primary">{{ students }}</h3>
+                    </div>
+                    <div class="fs-2 text-primary">👨‍🎓</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1 text-uppercase small fw-bold">Today's Collection</h6>
+                        <h3 class="fw-bold mb-0 text-success">₹{{ "{:,.0f}".format(today_collection) }}</h3>
+                    </div>
+                    <div class="fs-2 text-success">💰</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1 text-uppercase small fw-bold">Total Pending Fees</h6>
+                        <h3 class="fw-bold mb-0 text-danger">₹{{ "{:,.0f}".format(total_due) }}</h3>
+                    </div>
+                    <div class="fs-2 text-danger">⚠️</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1 text-uppercase small fw-bold">Lifetime Profit</h6>
+                        <h3 class="fw-bold mb-0 text-info">₹{{ "{:,.0f}".format(lifetime_profit) }}</h3>
+                    </div>
+                    <div class="fs-2 text-info">📈</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Monthly Target Progress Bar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card widget-card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="fw-bold mb-0">🎯 Monthly Fee Collection Target</h5>
+                    <span class="fw-bold text-success">₹{{ "{:,.0f}".format(current_collection) }} / ₹{{ "{:,.0f}".format(monthly_target) }}</span>
+                </div>
+                <div class="custom-progress">
+                    <div class="custom-progress-bar" style="width: {{ progress_pct }}%"></div>
+                </div>
+                <div class="text-end mt-1 small text-muted">{{ progress_pct|round(1) }}% Completed</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. AI Briefing -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card ai-box p-4">
+                <div class="d-flex align-items-center mb-2">
+                    <span class="fs-3 me-2">🤖</span>
+                    <h5 class="mb-0 fw-bold">AI Principal's Briefing, Risk & Forecast</h5>
+                </div>
+                <div class="ai-content">{{ ai_insight }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Charts Row -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card widget-card p-4">
+                <h6 class="fw-bold mb-3">📅 6-Month Collection vs Expense Trend</h6>
+                <canvas id="trendChart" height="150"></canvas>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card widget-card p-4">
+                <h6 class="fw-bold mb-3">📊 Class Strength</h6>
+                <canvas id="classChart" height="200"></canvas>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card widget-card p-4">
+                <h6 class="fw-bold mb-3">💰 Fee Status</h6>
+                <canvas id="statusChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Bottom Widgets Row -->
+    <div class="row g-4">
+        <div class="col-md-5">
+            <div class="card widget-card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold mb-0">🚨 Top Defaulters</h6>
+                    <a href="{{ url_for('defaulters') }}" class="btn btn-sm btn-outline-danger">View All</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-custom">
+                        <thead><tr><th>Roll No</th><th>Name</th><th>Balance</th><th>Action</th></tr></thead>
+                        <tbody>
+                            {% for d in top_defaulters %}
+                            <tr>
+                                <td>{{ d.roll_no }}</td>
+                                <td class="fw-bold">{{ d.name }}</td>
+                                <td class="text-danger fw-bold">₹{{ "{:,.0f}".format(d.total_balance) }}</td>
+                                <td><button class="whatsapp-btn" onclick="sendWhatsApp({{ d.student_id }})">📲 Remind</button></td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="4" class="text-center text-muted">No defaulters! 🎉</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card widget-card p-4">
+                <h6 class="fw-bold mb-3">🏆 Top Performers</h6>
+                {% for p in performers_list %}
+                <div class="d-flex align-items-center mb-3">
+                    <div class="fs-3 me-2">{{ loop.index }}️⃣</div>
+                    <div>
+                        <div class="fw-bold">{{ p.name }}</div>
+                        <div class="text-muted small">{{ p.class_name }} | {{ p.pct }}%</div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-muted text-center small">No marks data.</div>
+                {% endfor %}
+                <hr class="my-3">
+                <h6 class="fw-bold mb-3">🎂 Today's Birthdays</h6>
+                {% for b in birthdays %}
+                <div class="d-flex align-items-center mb-2">
+                    <div class="birthday-avatar">🎂</div>
+                    <div>
+                        <div class="fw-bold small">{{ b.name }}</div>
+                        <div class="text-muted small">Class: {{ b.class_name }}</div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-muted text-center small">Aaj koi birthday nahi hai.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card widget-card p-4">
+                <h6 class="fw-bold mb-3">📜 Activity Feed</h6>
+                <div class="timeline">
+                    {% for r in recent %}
+                    <div class="timeline-item">
+                        <div class="small fw-bold text-success">💰 Payment Received</div>
+                        <div class="small text-muted">Roll No {{ r.roll_no }} ne ₹{{ "{:,.0f}".format(r.amount) }} jama kiye.</div>
+                        <div class="text-muted" style="font-size:0.75rem;">{{ r.pay_date }}</div>
+                    </div>
+                    {% endfor %}
+                    {% for a in recent_admissions %}
+                    <div class="timeline-item">
+                        <div class="small fw-bold text-primary">👨‍🎓 New Admission</div>
+                        <div class="small text-muted">{{ a.name }} ne Class {{ a.class_name }} me admission liya.</div>
+                        <div class="text-muted" style="font-size:0.75rem;">{{ a.admission_date }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<div class="card" style="margin-top: 14px;">
-  <h3>🚨 Pending Dues: ₹{{ '{:,.0f}'.format(total_due) }}</h3>
+<!-- Floating AI Chat Widget with Voice -->
+<div class="ai-chat-widget">
+    <button class="ai-chat-btn" onclick="toggleAIChat()">🤖</button>
+    <div class="ai-chat-window" id="aiChatWindow">
+        <div class="ai-chat-header">
+            <span>🤖 AI Assistant (Voice Enabled)</span>
+            <span style="cursor: pointer;" onclick="toggleAIChat()">✖</span>
+        </div>
+        <div class="ai-chat-body" id="aiChatBody">
+            <div class="chat-msg ai">Namaste! Main aapka school assistant hu. Aap type karke ya mic dabakar bol sakte ho.</div>
+        </div>
+        <div class="ai-chat-footer">
+            <button class="mic-btn" onclick="startVoice()" title="Speak">🎤</button>
+            <input type="text" id="aiChatInput" class="form-control me-2" placeholder="Sawaal likho..." onkeypress="if(event.key === 'Enter') sendAIChat()">
+            <button class="btn btn-primary" onclick="sendAIChat()">Send</button>
+        </div>
+    </div>
 </div>
 
-<div class="card">
-  <h3>🕐 Recent Payments</h3>
-  <table>
-    <tr><th>Receipt</th><th>Roll</th><th>Amount</th><th>Date</th></tr>
-    {% for r in recent %}
-    <tr>
-      <td>{{ r['receipt_no'] }}</td>
-      <td>{{ r['roll_no'] }}</td>
-      <td>₹{{ '{:,.0f}'.format(r['amount']) }}</td>
-      <td>{{ r['pay_date'] }}</td>
-    </tr>
-    {% endfor %}
-  </table>
-</div>
+<!-- JavaScript Logic -->
+<script>
+    // --- 1. Live Clock ---
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('liveClock').innerText = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // --- 2. Dark Mode Toggle ---
+    function toggleDarkMode() {
+        document.body.classList.toggle('dark-mode');
+        localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+    }
+    if (localStorage.getItem('theme') === 'dark') {
+        document.body.classList.add('dark-mode');
+    }
+
+    // --- 3. Charts ---
+    const trendData = {{ monthly_trend | tojson }};
+    new Chart(document.getElementById('trendChart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: trendData.map(item => item.month),
+            datasets: [
+                { label: 'Collection', data: trendData.map(item => item.collection), borderColor: '#198754', backgroundColor: 'rgba(25, 135, 84, 0.1)', tension: 0.4, fill: true },
+                { label: 'Expense', data: trendData.map(item => item.expense), borderColor: '#dc3545', backgroundColor: 'rgba(220, 53, 69, 0.1)', tension: 0.4, fill: true }
+            ]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
+    });
+
+    const classData = {{ class_strength | tojson }};
+    new Chart(document.getElementById('classChart').getContext('2d'), {
+        type: 'bar',
+        data: { labels: classData.map(item => item.class_name), datasets: [{ data: classData.map(item => item.count), backgroundColor: '#667eea', borderRadius: 5 }] },
+        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+
+    const feeStatus = {{ fee_status | tojson }};
+    new Chart(document.getElementById('statusChart').getContext('2d'), {
+        type: 'doughnut',
+        data: { labels: ['Paid', 'Partial', 'Unpaid'], datasets: [{ data: [feeStatus.paid, feeStatus.partial, feeStatus.unpaid], backgroundColor: ['#198754', '#ffc107', '#dc3545'], borderWidth: 0 }] },
+        options: { responsive: true, plugins: { legend: { display: false } }, cutout: '70%' }
+    });
+
+    // --- 4. WhatsApp Reminder ---
+    async function sendWhatsApp(studentId) {
+        try {
+            const response = await fetch(`/api/get-reminder-message/${studentId}`);
+            const data = await response.json();
+            if (data.whatsapp_link) window.open(data.whatsapp_link, '_blank');
+            else alert(data.message || "Error");
+        } catch (e) { alert("Server Error"); }
+    }
+
+    // --- 5. AI Chat + Voice ---
+    function toggleAIChat() {
+        const win = document.getElementById('aiChatWindow');
+        win.style.display = win.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    async function sendAIChat() {
+        const input = document.getElementById('aiChatInput');
+        const msg = input.value.trim();
+        if (!msg) return;
+
+        const body = document.getElementById('aiChatBody');
+        body.innerHTML += `<div class="chat-msg user">${msg}</div>`;
+        input.value = '';
+        body.scrollTop = body.scrollHeight;
+
+        const typingId = 'typing-' + Date.now();
+        body.innerHTML += `<div class="chat-msg ai" id="${typingId}">Soch raha hu... ⏳</div>`;
+        body.scrollTop = body.scrollHeight;
+
+        try {
+            const res = await fetch('/ai-assistant', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: msg })
+            });
+            const data = await res.json();
+            document.getElementById(typingId).remove();
+            body.innerHTML += `<div class="chat-msg ai">${data.reply}</div>`;
+            body.scrollTop = body.scrollHeight;
+        } catch (e) {
+            document.getElementById(typingId).remove();
+            body.innerHTML += `<div class="chat-msg ai text-danger">Error connecting to AI.</div>`;
+        }
+    }
+
+    // --- 6. Voice Recognition ---
+    function startVoice() {
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'hi-IN'; // Hindi/English mix
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+            
+            const micBtn = document.querySelector('.mic-btn');
+            micBtn.style.backgroundColor = '#ffc107'; // Yellow while listening
+            
+            recognition.start();
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('aiChatInput').value = transcript;
+                micBtn.style.backgroundColor = '#dc3545';
+                sendAIChat();
+            };
+
+            recognition.onerror = () => { micBtn.style.backgroundColor = '#dc3545'; };
+            recognition.onend = () => { micBtn.style.backgroundColor = '#dc3545'; };
+        } else {
+            alert("Aapka browser voice input support nahi karta. Chrome use karein.");
+        }
+    }
+</script>
+
 {% endblock %}

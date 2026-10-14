@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>🤖 AI Assistant</h2>
+<p style="color:#7f8c8d; margin-bottom: 15px;">School ke baare me kuch bhi poocho, AI turant jawab dega!</p>
+
+<div class="card" style="height: 500px; display: flex; flex-direction: column;">
+  <div id="chatBox" style="flex: 1; overflow-y: auto; padding: 10px; background: #f8f9fa; border-radius: 8px; margin-bottom: 10px;">
+    <div style="background: #e3f2fd; padding: 10px; border-radius: 8px; margin-bottom: 8px;">
+      <strong>🤖 AI:</strong> Namaste! Main aapka school assistant hu. Kuch bhi pooch sakte ho.
+    </div>
+  </div>
+  
+  <div style="display: flex; gap: 8px;">
+    <input type="text" id="userInput" placeholder="Sawaal likho..." 
+           style="flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px;"
+           onkeypress="if(event.key==='Enter') sendMessage()">
+    <button onclick="sendMessage()" class="green" style="padding: 12px 20px;">Send ➤</button>
+  </div>
+</div>
+
+<script>
+async function sendMessage() {
+  const input = document.getElementById('userInput');
+  const query = input.value.trim();
+  if (!query) return;
+  
+  const chatBox = document.getElementById('chatBox');
+  chatBox.innerHTML += `<div style="background: #dcf8c6; padding: 10px; border-radius: 8px; margin-bottom: 8px; text-align: right;"><strong>👤 You:</strong> ${query}</div>`;
+  input.value = '';
+  chatBox.scrollTop = chatBox.scrollHeight;
+  
+  chatBox.innerHTML += `<div id="loading" style="background: #e3f2fd; padding: 10px; border-radius: 8px; margin-bottom: 8px;"><strong>🤖 AI:</strong> Soch raha hu...</div>`;
+  chatBox.scrollTop = chatBox.scrollHeight;
+  
+  try {
+    const res = await fetch('/ai-assistant', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({query: query})
+    });
+    const data = await res.json();
+    document.getElementById('loading').remove();
+    chatBox.innerHTML += `<div style="background: #e3f2fd; padding: 10px; border-radius: 8px; margin-bottom: 8px;"><strong>🤖 AI:</strong> ${data.reply}</div>`;
+    chatBox.scrollTop = chatBox.scrollHeight;
+  } catch(e) {
+    document.getElementById('loading').innerHTML = `<strong>❌ Error:</strong> ${e.message}`;
+  }
+}
+</script>
+{% endblock %}

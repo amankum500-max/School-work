@@ -886,7 +886,7 @@ def analytics():
         top_payers=top_payers, yearly_total=yearly_total,
         pending_count=pending_count)
 import os
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import google.generativeai as genai
 
@@ -905,8 +905,8 @@ else:
 model = genai.GenerativeModel('gemini-1.5-flash')
 @app.route('/')
 def home():
-    return "Backend is running successfully! 🚀"
-   
+    # Yahan apni pehli HTML file ka naam likhein (jaise login.html ya dashboard.html)
+    return render_template('login.html') 
 @app.route('/api/chat', methods=['POST'])
 def chat():
     try:

@@ -387,7 +387,38 @@ def analytics():
         monthly_data=monthly_data, class_dist=class_dist,
         top_payers=top_payers, yearly_total=yearly_total,
         pending_count=pending_count)
-   
+  # ==================== 🤖 AI ASSISTANT ====================
+@app.route("/ai-assistant", methods=["GET", "POST"])
+@login_required
+def ai_assistant():
+    if request.method == "POST":
+        data = request.get_json() or {}
+        user_query = data.get("query", "").strip()
+        
+        if not user_query:
+            return jsonify({"reply": "Kuch pooch toh sahi bhai!"})
+
+        if not ai_model:
+            return jsonify({"reply": "AI abhi available nahi hai. Render me GEMINI_API_KEY set kar."})
+
+        total_students = one("SELECT COUNT(*) c FROM students")["c"]
+        total_due = one("SELECT COALESCE(SUM(balance),0) t FROM bills WHERE balance > 0")["t"]
+        
+        context = f"""
+        Aap ek School Management System ke AI assistant hain. Hinglish me short aur helpful jawab dijiye.
+        Total Students: {total_students}
+        Total Pending Fees: Rs {total_due}
+        User ka Sawaal: {user_query}
+        """
+
+        try:
+            response = ai_model.generate_content(context)
+            return jsonify({"reply": response.text})
+        except Exception as e:
+            return jsonify({"reply": f"AI Error: {str(e)}"})
+            
+    return render_template("ai_assistant.html")
+# ====================================================== 
 # ======================================================
 # ---------------- RUN ----------------
 init_db()

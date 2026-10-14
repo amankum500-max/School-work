@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>📊 Smart Analytics</h2>
+
+<div class="stats" style="grid-template-columns: 1fr 1fr; margin-bottom: 15px;">
+  <div class="stat">
+    <div class="icon">💰</div>
+    <div class="val">₹{{ '{:,.0f}'.format(yearly_total) }}</div>
+    <div class="lbl">This Year Collection</div>
+  </div>
+  <div class="stat">
+    <div class="icon">⚠️</div>
+    <div class="val">{{ pending_count }}</div>
+    <div class="lbl">Pending Bills</div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>📈 Monthly Collection Trend</h3>
+  <canvas id="trendChart" height="200"></canvas>
+</div>
+
+<div class="card">
+  <h3>🎓 Class-wise Students</h3>
+  <canvas id="classChart" height="200"></canvas>
+</div>
+
+<div class="card">
+  <h3>🏆 Top 10 Payers</h3>
+  <table>
+    <tr><th>Rank</th><th>Name</th><th>Roll</th><th>Total Paid</th></tr>
+    {% for p in top_payers %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td>{{ p['name'] }}</td>
+      <td>{{ p['roll_no'] }}</td>
+      <td>₹{{ '{:,.0f}'.format(p['total_paid']) }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Monthly Trend Chart
+new Chart(document.getElementById('trendChart'), {
+  type: 'line',
+  data: {
+    labels: [{% for m in monthly_data|reverse %}'{{ m["month"] }}',{% endfor %}],
+    datasets: [{
+      label: 'Collection (₹)',
+      data: [{% for m in monthly_data|reverse %}{{ m["collection"] }},{% endfor %}],
+      borderColor: '#3498db',
+      backgroundColor: 'rgba(52, 152, 219, 0.2)',
+      tension: 0.4,
+      fill: true
+    }]
+  }
+});
+
+// Class Distribution Chart
+new Chart(document.getElementById('classChart'), {
+  type: 'doughnut',
+  data: {
+    labels: [{% for c in class_dist %}'Class {{ c["class_name"] }}',{% endfor %}],
+    datasets: [{
+      data: [{% for c in class_dist %}{{ c["count"] }},{% endfor %}],
+      backgroundColor: ['#3498db','#e74c3c','#f39c12','#27ae60','#9b59b6','#1abc9c']
+    }]
+  }
+});
+</script>
+{% endblock %}

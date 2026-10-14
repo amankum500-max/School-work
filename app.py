@@ -885,3 +885,43 @@ def analytics():
         monthly_data=monthly_data, class_dist=class_dist,
         top_payers=top_payers, yearly_total=yearly_total,
         pending_count=pending_count)
+import os
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import google.generativeai as genai
+
+app = Flask(__name__)
+CORS(app) # Frontend se request allow karne ke liye
+
+# API Key ko Render ke environment variable se uthana
+api_key = os.environ.get("GEMINI_API_KEY")
+
+if not api_key:
+    print("Warning: GEMINI_API_KEY set nahi hai!")
+else:
+    genai.configure(api_key=api_key)
+
+# Model initialize karein
+model = genai.GenerativeModel('gemini-1.5-flash')
+
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    try:
+        data = request.get_json()
+        user_message = data.get('message')
+        
+        if not user_message:
+            return jsonify({"reply": "Kripya kuch message bhejein."}), 400
+            
+        # Gemini API call
+        response = model.generate_content(user_message)
+        return jsonify({"reply": response.text})
+        
+    except Exception as e:
+        print("Error:", e)
+        return jsonify({"reply": "AI abhi jawab nahi de pa raha. Thodi der baad try karein."}), 500
+
+if __name__ == '__main__':
+    # Render par port 10000 default hota hai
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)

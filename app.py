@@ -13,7 +13,21 @@ from database import init_db, run, all as db_all, one, current_month, today
 
 app = Flask(__name__)
 app.secret_key = "school-secret-key-change-this-2026"
+# ---------- AI Setup ----------
+try:
+    import google.generativeai as genai
+    HAS_AI = True
+except ImportError:
+    HAS_AI = False
 
+GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
+ai_model = None
+if HAS_AI and GEMINI_KEY:
+    try:
+        genai.configure(api_key=GEMINI_KEY)
+        ai_model = genai.GenerativeModel('gemini-1.5-flash')
+    except Exception as e:
+        print(f"AI Setup Error: {e}")
 # ---------------- AUTH ----------------
 def login_required(f):
     @wraps(f)

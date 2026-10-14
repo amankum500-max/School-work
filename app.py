@@ -5,13 +5,15 @@
 =====================================================
 """
 from flask import (Flask, render_template, request, redirect,
-                   url_for, session, flash, send_file)
+                   url_for, session, flash, send_file, jsonify)
 from functools import wraps
 import csv, io, os
 from datetime import datetime, timedelta
 from database import init_db, run, all as db_all, one, current_month, today
+
 app = Flask(__name__)
 app.secret_key = "school-secret-key-change-this-2026"
+
 # ---------- AI Setup ----------
 try:
     import google.generativeai as genai

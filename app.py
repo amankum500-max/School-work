@@ -860,3 +860,28 @@ def ai_assistant():
         except Exception as e:
             return jsonify({"reply": f"AI Error: {str(e)}"})
     return render_template("ai_assistant.html")
+   # 📊 SMART ANALYTICS DASHBOARD
+@app.route("/analytics")
+@login_required
+def analytics():
+    monthly_data = db_all("""
+        SELECT substr(pay_date, 1, 7) as month, SUM(amount) as collection
+        FROM payments GROUP BY month ORDER BY month DESC LIMIT 6
+    """)
+    class_dist = db_all("""
+        SELECT class_name, COUNT(*) as count FROM students
+        GROUP BY class_name ORDER BY class_name
+    """)
+    top_payers = db_all("""
+        SELECT s.name, s.roll_no, SUM(p.amount) as total_paid
+        FROM payments p JOIN students s ON p.roll_no = s.roll_no
+        GROUP BY s.name, s.roll_no ORDER BY total_paid DESC LIMIT 10
+    """)
+    yearly_total = one("SELECT COALESCE(SUM(amount),0) t FROM payments WHERE pay_date LIKE %s",
+                       (str(datetime.now().year) + "%",))["t"]
+    pending_count = one("SELECT COUNT(*) c FROM bills WHERE balance > 0")["c"]
+
+    return render_template("analytics.html",
+        monthly_data=monthly_data, class_dist=class_dist,
+        top_payers=top_payers, yearly_total=yearly_total,
+        pending_count=pending_count)

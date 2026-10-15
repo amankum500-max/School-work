@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <h2 class="fw-bold mb-4">💾 Backup & Restore</h2>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card p-4" style="border-radius:15px;">
+                <div class="text-center mb-3"><div style="font-size:3rem;">📥</div></div>
+                <h5 class="fw-bold text-center">Download Full Backup</h5>
+                <p class="text-muted small text-center">Saare data (students, fees, marks, staff, library, hostel) ka SQL backup file me download karein.</p>
+                <a href="{{ url_for('backup_download') }}" class="btn btn-success w-100">⬇️ Download Backup (SQL)</a>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card p-4" style="border-radius:15px;">
+                <div class="text-center mb-3"><div style="font-size:3rem;">🔄</div></div>
+                <h5 class="fw-bold text-center">Restore Backup</h5>
+                <p class="text-muted small text-center">Backup file (.sql) upload karke database restore karein. <strong>Warning:</strong> Ye purana data replace kar dega.</p>
+                <div class="alert alert-warning small">⚠️ Restore feature manually SQL file chalane se hota hai (Render dashboard se).</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card p-4 mt-4" style="border-radius:15px;">
+        <h6 class="fw-bold mb-3">📋 Backup Includes:</h6>
+        <div class="row">
+            <div class="col-md-4"><ul class="small"><li>✅ Students Data</li><li>✅ Bills & Payments</li><li>✅ Marks & Results</li><li>✅ Expenses</li></ul></div>
+            <div class="col-md-4"><ul class="small"><li>✅ Staff Records</li><li>✅ Library Books</li><li>✅ Hostel Data</li><li>✅ Transport Data</li></ul></div>
+            <div class="col-md-4"><ul class="small"><li>✅ Notices</li><li>✅ Classes & Subjects</li><li>✅ Audit Logs</li><li>✅ Parent Accounts</li></ul></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

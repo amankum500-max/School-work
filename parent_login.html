@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parent Portal Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .login-box { background: white; border-radius: 20px; padding: 40px; width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .login-box h2 { text-align: center; margin-bottom: 30px; font-weight: 800; color: #2c3e50; }
+        .login-box .form-control { border-radius: 10px; padding: 12px; }
+        .login-box .btn { border-radius: 10px; padding: 12px; font-weight: 600; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <div class="text-center mb-3" style="font-size: 3rem;">👨‍👩‍👧</div>
+        <h2>Parent Portal</h2>
+        <p class="text-center text-muted small mb-4">Apne bacche ki progress dekhein</p>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for cat, msg in messages %}
+            <div class="alert alert-{{ 'danger' if cat == 'error' else cat }}">{{ msg }}</div>
+            {% endfor %}
+        {% endwith %}
+        <form method="POST">
+            <input name="username" class="form-control mb-3" placeholder="Username" required>
+            <input name="password" type="password" class="form-control mb-3" placeholder="Password" required>
+            <button class="btn btn-primary w-100 text-white">🔓 Login</button>
+        </form>
+        <div class="text-center mt-3 small text-muted">Contact school admin for credentials</div>
+    </div>
+</body>
+</html>

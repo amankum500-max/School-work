@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <h2 class="fw-bold mb-0">🏠 Hostel Management</h2>
+        <div>
+            <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="runHostelAI()">🤖 AI Optimizer</button>
+            <button class="btn btn-sm btn-primary rounded-pill" onclick="document.getElementById('roomForm').style.display='block'">➕ Add Room</button>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4"><div class="card p-3 text-center" style="border-radius:15px;"><div class="text-muted small">Total Capacity</div><h4 class="fw-bold text-primary">{{ total_capacity }}</h4></div></div>
+        <div class="col-md-4"><div class="card p-3 text-center" style="border-radius:15px;"><div class="text-muted small">Occupied</div><h4 class="fw-bold text-success">{{ total_occupied }}</h4></div></div>
+        <div class="col-md-4"><div class="card p-3 text-center" style="border-radius:15px;"><div class="text-muted small">Monthly Income</div><h4 class="fw-bold text-info">₹{{ "{:,.0f}".format(monthly_income) }}</h4></div></div>
+    </div>
+
+    <!-- Add Room Form -->
+    <div id="roomForm" class="card p-4 mb-4" style="display:none; border-radius:15px;">
+        <h6 class="fw-bold mb-3">Add Hostel Room</h6>
+        <form method="POST" action="{{ url_for('add_hostel_room') }}" class="row g-2">
+            <div class="col-md-2"><input name="room_no" class="form-control" placeholder="Room No" required></div>
+            <div class="col-md-2"><input name="floor" class="form-control" placeholder="Floor"></div>
+            <div class="col-md-2"><input name="capacity" type="number" class="form-control" placeholder="Capacity" value="4"></div>
+            <div class="col-md-2"><input name="monthly_fee" type="number" class="form-control" placeholder="Monthly Fee"></div>
+            <div class="col-md-2"><input name="warden_name" class="form-control" placeholder="Warden Name"></div>
+            <div class="col-md-2"><input name="warden_contact" class="form-control" placeholder="Warden Contact"></div>
+            <div class="col-12 text-end"><button class="btn btn-success">Save Room</button></div>
+        </form>
+    </div>
+
+    <!-- Rooms & Allocations -->
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card p-3" style="border-radius:15px;">
+                <h6 class="fw-bold mb-3">🛏️ Rooms ({{ rooms|length }})</h6>
+                <table class="table table-sm">
+                    <thead><tr><th>Room</th><th>Capacity</th><th>Fee</th><th>Warden</th></tr></thead>
+                    <tbody>
+                        {% for r in rooms %}
+                        <tr>
+                            <td class="fw-bold">{{ r.room_no }}</td>
+                            <td>{{ r.occupied }}/{{ r.capacity }}</td>
+                            <td>₹{{ r.monthly_fee }}</td>
+                            <td>{{ r.warden_name or '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card p-3" style="border-radius:15px;">
+                <h6 class="fw-bold mb-3">👥 Active Allocations</h6>
+                <form method="POST" action="{{ url_for('allocate_hostel') }}" class="row g-2 mb-3">
+                    <div class="col-md-5"><input name="roll_no" class="form-control form-control-sm" placeholder="Roll No" required></div>
+                    <div class="col-md-4"><input name="room_no" class="form-control form-control-sm" placeholder="Room No" required></div>
+                    <div class="col-md-3"><button class="btn btn-primary btn-sm w-100">Allocate</button></div>
+                </form>
+                <table class="table table-sm">
+                    <thead><tr><th>Student</th><th>Room</th><th>Action</th></tr></thead>
+                    <tbody>
+                        {% for a in allocations %}
+                        <tr>
+                            <td>{{ a.student_name }} <br><small class="text-muted">{{ a.roll_no }}</small></td>
+                            <td>{{ a.room_no }}</td>
+                            <td><a href="{{ url_for('vacate_hostel', aid=a.id) }}" class="btn btn-sm btn-outline-danger">Vacate</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="aiResult" class="card p-4 mt-4" style="display:none; border-radius:15px; background:#f8f9fa;"></div>
+</div>
+
+<script>
+    async function runHostelAI() {
+        const box = document.getElementById('aiResult');
+        box.style.display = 'block';
+        box.innerHTML = '<div class="spinner-border text-primary"></div> AI analyzing...';
+        const res = await fetch('/api/ai-optimize-hostel');
+        const data = await res.json();
+        box.innerHTML = '<h6 class="fw-bold">🤖 AI Operations Insight</h6><div style="white-space:pre-wrap;">' + data.result + '</div>';
+    }
+</script>
+{% endblock %}

@@ -925,6 +925,13 @@ def ai_smart_reply():
         return jsonify({"result": ai_model.generate_content(prompt).text})
     except Exception as e:
         return jsonify({"result": f"Error: {str(e)}"})
+       @app.route("/ai-hub")
+@login_required
+def ai_hub():
+    # Students ka dropdown banane ke liye
+    students = db_all("SELECT id, name, roll_no FROM students ORDER BY name")
+    options = "".join([f'<option value="{s["id"]}">{s["name"]} (Roll: {s["roll_no"]})</option>' for s in students])
+    return render_template("ai_hub.html", students_options=options)
 # ====================================================== 
 # ======================================================
 # ---------------- RUN ----------------

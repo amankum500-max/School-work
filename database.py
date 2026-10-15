@@ -187,8 +187,8 @@ def current_month():
 def today():
     return datetime.now().strftime("%Y-%m-%d")
 
-# Initialize DB on import
---  Health Records Table
+c.execute("""
+-- Health Records Table
 CREATE TABLE IF NOT EXISTS student_health (
     id SERIAL PRIMARY KEY,
     roll_no VARCHAR(50) REFERENCES students(roll_no) ON DELETE CASCADE,
@@ -197,14 +197,15 @@ CREATE TABLE IF NOT EXISTS student_health (
     emergency_contact VARCHAR(20)
 );
 
---  Attendance Table
+-- Attendance Table
 CREATE TABLE IF NOT EXISTS attendance (
     id SERIAL PRIMARY KEY,
     roll_no VARCHAR(50) REFERENCES students(roll_no) ON DELETE CASCADE,
     att_date DATE NOT NULL,
-    status VARCHAR(10) NOT NULL -- 'Present', 'Absent', 'Late'
+    status VARCHAR(10) NOT NULL
 );
---  Hostel Rooms
+
+-- Hostel Rooms
 CREATE TABLE IF NOT EXISTS hostel_rooms (
     id SERIAL PRIMARY KEY,
     room_no VARCHAR(20) UNIQUE,
@@ -216,7 +217,7 @@ CREATE TABLE IF NOT EXISTS hostel_rooms (
     warden_contact VARCHAR(20)
 );
 
---  Hostel Allocations
+-- Hostel Allocations
 CREATE TABLE IF NOT EXISTS hostel_allocations (
     id SERIAL PRIMARY KEY,
     roll_no VARCHAR(50),
@@ -225,7 +226,7 @@ CREATE TABLE IF NOT EXISTS hostel_allocations (
     status VARCHAR(20) DEFAULT 'Active'
 );
 
---  Transport Routes
+-- Transport Routes
 CREATE TABLE IF NOT EXISTS transport_routes (
     id SERIAL PRIMARY KEY,
     route_name VARCHAR(100),
@@ -239,7 +240,7 @@ CREATE TABLE IF NOT EXISTS transport_routes (
     stops TEXT
 );
 
---  Transport Allocations
+-- Transport Allocations
 CREATE TABLE IF NOT EXISTS transport_allocations (
     id SERIAL PRIMARY KEY,
     roll_no VARCHAR(50),
@@ -249,7 +250,7 @@ CREATE TABLE IF NOT EXISTS transport_allocations (
     status VARCHAR(20) DEFAULT 'Active'
 );
 
---  Parent Portal Users
+-- Parent Portal Users
 CREATE TABLE IF NOT EXISTS parent_users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
@@ -259,7 +260,8 @@ CREATE TABLE IF NOT EXISTS parent_users (
     contact VARCHAR(20),
     active INT DEFAULT 1
 );
---  Classes & Sections
+
+-- Classes & Sections
 CREATE TABLE IF NOT EXISTS classes (
     id SERIAL PRIMARY KEY,
     class_name VARCHAR(50) UNIQUE,
@@ -268,7 +270,7 @@ CREATE TABLE IF NOT EXISTS classes (
     room_no VARCHAR(20)
 );
 
---  Subjects
+-- Subjects
 CREATE TABLE IF NOT EXISTS subjects (
     id SERIAL PRIMARY KEY,
     subject_name VARCHAR(100) UNIQUE,
@@ -278,7 +280,7 @@ CREATE TABLE IF NOT EXISTS subjects (
     max_marks INT DEFAULT 100
 );
 
---  Audit Log
+-- Audit Log
 CREATE TABLE IF NOT EXISTS audit_logs (
     id SERIAL PRIMARY KEY,
     user_name VARCHAR(100),
@@ -287,7 +289,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     log_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
---  Notice Board
+-- Notice Board
 CREATE TABLE IF NOT EXISTS notices (
     id SERIAL PRIMARY KEY,
     title VARCHAR(200),
@@ -298,4 +300,8 @@ CREATE TABLE IF NOT EXISTS notices (
     priority VARCHAR(20) DEFAULT 'Normal',
     active INT DEFAULT 1
 );
+""")
+conn.commit()
+c.close()
+conn.close()
 init_db()

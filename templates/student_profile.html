@@ -42,6 +42,11 @@
 
     <!-- Tabs -->
     <ul class="nav nav-tabs mb-3" id="profileTab" role="tablist">
+        <!-- Existing Tabs -->
+<li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#marks">📝 Marks</button></li>
+<!-- 🆕 Add these -->
+<li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#attendance">📅 Attendance</button></li>
+<li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#health">🏥 Health</button></li>
         <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#overview">📋 Overview</button></li>
         <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#fees">💰 Fee Ledger</button></li>
         <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#marks">📝 Marks</button></li>
@@ -49,6 +54,52 @@
 
     <div class="tab-content">
         <!-- Overview -->
+        <!-- Attendance Tab -->
+<div class="tab-pane fade" id="attendance">
+    <div class="card p-4" style="border-radius: 15px;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">Attendance Summary</h5>
+            <span class="badge bg-primary fs-6">Overall: {{ "%.1f"|format(attendance_pct) }}%</span>
+        </div>
+        <table class="table table-sm">
+            <thead><tr><th>Date</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for a in att_records %}
+                <tr>
+                    <td>{{ a.att_date }}</td>
+                    <td><span class="badge bg-{{ 'success' if a.status == 'Present' else 'danger' }}">{{ a.status }}</span></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="2" class="text-center text-muted">No attendance records.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Health Tab -->
+<div class="tab-pane fade" id="health">
+    <div class="card p-4" style="border-radius: 15px;">
+        <h5 class="fw-bold mb-3">🏥 Health & Medical Info</h5>
+        <form action="{{ url_for('save_health', sid=student.id) }}" method="POST" class="row g-3">
+            <div class="col-md-4">
+                <label class="small text-muted">Blood Group</label>
+                <input name="blood_group" value="{{ health.blood_group if health else '' }}" class="form-control">
+            </div>
+            <div class="col-md-4">
+                <label class="small text-muted">Emergency Contact</label>
+                <input name="emergency_contact" value="{{ health.emergency_contact if health else '' }}" class="form-control">
+            </div>
+            <div class="col-md-4">
+                <label class="small text-muted">Allergies (if any)</label>
+                <input name="allergies" value="{{ health.allergies if health else '' }}" class="form-control">
+            </div>
+            <div class="col-12 text-end">
+                <button class="btn btn-success btn-sm">💾 Save Health Info</button>
+            </div>
+        </form>
+    </div>
+</div>
         <div class="tab-pane fade show active" id="overview">
             <div class="card p-4" style="border-radius: 15px;">
                 <h5 class="fw-bold mb-3">Personal Details</h5>

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-4">
+    <h2 class="fw-bold mb-4">📚 Digital Library</h2>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card p-3" style="border-radius:15px;">
+                <div class="d-flex justify-content-between mb-3">
+                    <h6 class="fw-bold mb-0">📖 Books Collection</h6>
+                    <button class="btn btn-sm btn-primary" onclick="document.getElementById('bookForm').style.display='block'">➕ Add Book</button>
+                </div>
+                <form id="bookForm" method="POST" action="{{ url_for('add_book') }}" style="display:none;" class="mb-3">
+                    <input name="book_id" class="form-control mb-2" placeholder="Book ID" required>
+                    <input name="title" class="form-control mb-2" placeholder="Title" required>
+                    <input name="author" class="form-control mb-2" placeholder="Author">
+                    <input name="category" class="form-control mb-2" placeholder="Category">
+                    <input name="copies" type="number" class="form-control mb-2" placeholder="Copies" value="1">
+                    <button class="btn btn-success btn-sm">Save</button>
+                </form>
+                <table class="table table-sm">
+                    <thead><tr><th>ID</th><th>Title</th><th>Available</th></tr></thead>
+                    <tbody>
+                        {% for b in books %}
+                        <tr><td>{{ b.book_id }}</td><td class="fw-bold">{{ b.title }}</td><td>{{ b.available_copies }}/{{ b.total_copies }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card p-3" style="border-radius:15px;">
+                <h6 class="fw-bold mb-3">📤 Currently Issued Books</h6>
+                <table class="table table-sm">
+                    <thead><tr><th>Book</th><th>Student</th><th>Due</th><th>Action</th></tr></thead>
+                    <tbody>
+                        {% for i in issued %}
+                        <tr>
+                            <td>{{ i.title }}</td>
+                            <td>{{ i.student_name }}</td>
+                            <td>{{ i.due_date }}</td>
+                            <td><a href="{{ url_for('return_book', iid=i.id) }}" class="btn btn-sm btn-outline-success">Return</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

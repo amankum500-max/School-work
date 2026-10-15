@@ -24,7 +24,42 @@ def init_db():
         full_name TEXT,
         active INTEGER DEFAULT 1
     );
+-- 👨‍🏫 Staff Table
+CREATE TABLE IF NOT EXISTS staff (
+    id SERIAL PRIMARY KEY,
+    staff_id VARCHAR(50) UNIQUE,
+    name VARCHAR(100) NOT NULL,
+    designation VARCHAR(50),
+    subject VARCHAR(50),
+    contact VARCHAR(20),
+    email VARCHAR(100),
+    joining_date DATE,
+    salary NUMERIC(10,2),
+    address TEXT
+);
 
+-- 📚 Library Books Table
+CREATE TABLE IF NOT EXISTS library_books (
+    id SERIAL PRIMARY KEY,
+    book_id VARCHAR(50) UNIQUE,
+    title VARCHAR(200) NOT NULL,
+    author VARCHAR(100),
+    category VARCHAR(50),
+    total_copies INT DEFAULT 1,
+    available_copies INT DEFAULT 1
+);
+
+-- 📖 Book Issues Table
+CREATE TABLE IF NOT EXISTS book_issues (
+    id SERIAL PRIMARY KEY,
+    book_id VARCHAR(50),
+    roll_no VARCHAR(50),
+    issue_date DATE,
+    due_date DATE,
+    return_date DATE,
+    fine NUMERIC(10,2) DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'Issued'
+);
     CREATE TABLE IF NOT EXISTS students(
         id SERIAL PRIMARY KEY,
         roll_no TEXT UNIQUE,

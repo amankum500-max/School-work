@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parent Dashboard - {{ student.name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
+        .hero { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 30px; border-radius: 20px; margin-bottom: 20px; }
+        .stat-card { background: white; border-radius: 16px; padding: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .stat-card h4 { font-weight: 800; margin: 0; }
+    </style>
+</head>
+<body>
+<div class="container py-4">
+    <div class="hero">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold mb-0">{{ student.name }}</h2>
+                <p class="mb-0">Class {{ student.class_name }}-{{ student.section }} | Roll: {{ student.roll_no }}</p>
+                <small>Welcome, {{ session.parent_name }}!</small>
+            </div>
+            <a href="{{ url_for('parent_logout') }}" class="btn btn-light btn-sm">Logout</a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="text-muted small">Academic Score</div>
+                <h4 class="text-success">{{ "%.1f"|format(percentage) }}%</h4>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="text-muted small">Attendance</div>
+                <h4 class="text-primary">{{ att_pct }}%</h4>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="text-muted small">Pending Fees</div>
+                <h4 class="text-danger">₹{{ "{:,.0f}".format(total_due) }}</h4>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="text-muted small">Total Paid</div>
+                <h4 class="text-success">₹{{ "{:,.0f}".format(total_paid) }}</h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card p-4" style="border-radius:16px;">
+                <h5 class="fw-bold mb-3">📝 Recent Marks</h5>
+                <table class="table table-sm">
+                    <thead><tr><th>Subject</th><th>Marks</th><th>Total</th></tr></thead>
+                    <tbody>
+                        {% for m in marks[:8] %}
+                        <tr><td>{{ m.subject }}</td><td class="fw-bold">{{ m.marks }}</td><td>{{ m.total }}</td></tr>
+                        {% else %}
+                        <tr><td colspan="3" class="text-muted text-center">No marks added.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card p-4" style="border-radius:16px;">
+                <h5 class="fw-bold mb-3">💰 Fee History</h5>
+                <table class="table table-sm">
+                    <thead><tr><th>Month</th><th>Total</th><th>Balance</th><th>Status</th></tr></thead>
+                    <tbody>
+                        {% for b in bills[:8] %}
+                        <tr>
+                            <td>{{ b.month }}</td>
+                            <td>₹{{ "{:,.0f}".format(b.total) }}</td>
+                            <td class="text-danger">₹{{ "{:,.0f}".format(b.balance) }}</td>
+                            <td><span class="badge bg-{{ 'success' if b.status == 'Paid' else 'danger' }}">{{ b.status }}</span></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" class="text-muted text-center">No bills yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

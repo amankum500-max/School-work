@@ -13,6 +13,13 @@
   <h1>🏫 School Management</h1>
   <span>👤 {{ session.name }}</span>
 </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('attendance') }}" class="btn btn-info btn-sm rounded-pill text-white">📅 Attendance</a>
+    <a href="{{ url_for('bulk_import') }}" class="btn btn-secondary btn-sm rounded-pill">📤 Bulk Import</a>
+    <a href="{{ url_for('export_students') }}" class="btn btn-outline-secondary btn-sm rounded-pill">📥 Export CSV</a>
+    <button class="btn btn-primary btn-sm rounded-pill" onclick="toggleAddForm()">➕ Add Student</button>
+    <a href="{{ url_for('transfer_certificate', sid=s['id']) }}" target="_blank" class="action-btn btn-del" style="background:#e2e8f0; color:#334155;" title="Transfer Certificate">📜</a>
+  </div>
 
 <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
 

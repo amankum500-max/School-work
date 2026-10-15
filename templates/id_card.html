@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ID Card - {{ student.name }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .id-card { width: 350px; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .id-header { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 20px; text-align: center; }
+        .id-header h3 { margin: 0; font-size: 1.2rem; }
+        .id-body { padding: 20px; display: flex; align-items: center; }
+        .avatar { width: 80px; height: 80px; border-radius: 50%; background: #e9ecef; display: flex; justify-content: center; align-items: center; font-size: 2.5rem; margin-right: 20px; }
+        .details p { margin: 5px 0; font-size: 0.9rem; }
+        .details strong { color: #333; }
+        .id-footer { background: #f8f9fa; padding: 10px; text-align: center; font-size: 0.75rem; color: #6c757d; border-top: 1px solid #eee; }
+        @media print {
+            body { background: white; }
+            .no-print { display: none; }
+            .id-card { box-shadow: none; border: 1px solid #ccc; }
+        }
+    </style>
+</head>
+<body>
+    <div class="text-center no-print" style="position: fixed; top: 20px;">
+        <button onclick="window.print()" style="padding: 10px 20px; background: #198754; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">🖨️ Print ID Card</button>
+    </div>
+
+    <div class="id-card">
+        <div class="id-header">
+            <h3>🏫 School Management</h3>
+            <span style="font-size: 0.8rem; opacity: 0.9;">Student Identity Card</span>
+        </div>
+        <div class="id-body">
+            <div class="avatar">👤</div>
+            <div class="details">
+                <p><strong>Name:</strong> {{ student.name }}</p>
+                <p><strong>Roll No:</strong> {{ student.roll_no }}</p>
+                <p><strong>Class:</strong> {{ student.class_name }}-{{ student.section }}</p>
+                <p><strong>Contact:</strong> {{ student.contact or '-' }}</p>
+                <p><strong>Blood Group:</strong> -</p>
+            </div>
+        </div>
+        <div class="id-footer">
+            Valid for Academic Year 2026-2027 | Principal Signature
+        </div>
+    </div>
+</body>
+</html>

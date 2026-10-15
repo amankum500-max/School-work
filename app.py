@@ -932,6 +932,214 @@ def ai_hub():
     students = db_all("SELECT id, name, roll_no FROM students ORDER BY name")
     options = "".join([f'<option value="{s["id"]}">{s["name"]} (Roll: {s["roll_no"]})</option>' for s in students])
     return render_template("ai_hub.html", students_options=options)
+# ==================== 🚀 ULTIMATE AI FEATURES (V2) ====================
+
+# 📅 1. AI Timetable Generator
+@app.route("/ai/generate-timetable", methods=["POST"])
+@login_required
+def ai_generate_timetable():
+    data = request.get_json() or {}
+    class_name = data.get("class_name", "10")
+    subjects = data.get("subjects", "Maths, Science, English, Hindi, Social Studies, Computer")
+    periods = int(data.get("periods", 6))
+    
+    if not ai_model: return jsonify({"result": "AI offline."})
+
+    prompt = f"""
+    Aap ek School Timetable Coordinator hain. Class {class_name} ke liye ek weekly timetable banayein.
+    Subjects: {subjects}
+    Daily Periods: {periods}
+    
+    Rules:
+    - Monday se Saturday tak ka timetable
+    - Har subject week me 3-5 baar aana chahiye
+    - Maths/Science subah ke periods me ho (fresh mind)
+    - Language subjects baad me
+    - Har din ka pehla period attendance + ek light subject
+    - Timetable conflict-free ho (teacher clash nahi)
+    
+    Format: Ek clean table format me (Markdown table use karein).
+    """
+    try:
+        return jsonify({"result": ai_model.generate_content(prompt).text})
+    except Exception as e:
+        return jsonify({"result": f"Error: {str(e)}"})
+
+
+# 📰 2. AI School Newsletter Generator
+@app.route("/ai/generate-newsletter")
+@login_required
+def ai_generate_newsletter():
+    if not ai_model: return jsonify({"result": "AI offline."})
+
+    # Gather school data
+    students = one("SELECT COUNT(*) c FROM students")["c"]
+    month = current_month()
+    collection = one("SELECT COALESCE(SUM(amount),0) t FROM payments WHERE pay_date LIKE %s", (month + "%",))["t"]
+    admissions = one("SELECT COUNT(*) c FROM students WHERE admission_date LIKE %s", (month + "%",))["c"]
+    
+    # Top performers
+    top = db_all("""
+        SELECT s.name, s.class_name, SUM(CAST(m.marks AS FLOAT)) as t_o, SUM(CAST(m.total AS FLOAT)) as t_m
+        FROM students s JOIN marks m ON s.roll_no = m.roll_no
+        GROUP BY s.name, s.class_name ORDER BY (t_o/t_m) DESC LIMIT 3
+    """)
+
+    prompt = f"""
+    Aap ek School Newsletter Editor hain. Is mahine ka ek professional newsletter (Hinglish me) banayein.
+    
+    Data:
+    - Total Students: {students}
+    - New Admissions: {admissions}
+    - This Month Collection: Rs {collection}
+    - Top Performers: {[f"{t['name']} (Class {t['class_name']})" for t in top]}
+    
+    Newsletter me ye sections hone chahiye:
+    1. 📢 Principal's Message (2 lines)
+    2. 🎓 Academic Highlights
+    3. 🏆 Star Performers of the Month
+    4. 📅 Upcoming Events (2-3)
+    5. 💐 Congratulations Note
+    
+    Format: Markdown me, headings ke saath. Professional tone.
+    """
+    try:
+        return jsonify({"result": ai_model.generate_content(prompt).text})
+    except Exception as e:
+        return jsonify({"result": f"Error: {str(e)}"})
+
+
+# 💭 3. AI Sentiment Analyzer
+@app.route("/ai/sentiment-analysis", methods=["POST"])
+@login_required
+def ai_sentiment_analysis():
+    data = request.get_json() or {}
+    feedback_text = data.get("feedback", "").strip()
+    if not feedback_text: return jsonify({"result": "Kripya feedback text daalein."})
+    if not ai_model: return jsonify({"result": "AI offline."})
+
+    prompt = f"""
+    Aap ek Expert Data Analyst hain. Niche diye gaye feedback ka Sentiment Analysis karein:
+    
+    Feedback: "{feedback_text}"
+    
+    Analysis me ye cheezein dijiye:
+    1. Overall Mood: Positive / Negative / Neutral / Mixed
+    2. Emotion: (Happy, Angry, Frustrated, Satisfied, etc.)
+    3. Key Issues (agar koi hain)
+    4. Suggestion for School Management
+    
+    Format: 3-4 bullet points, Hinglish me short aur crisp.
+    """
+    try:
+        return jsonify({"result": ai_model.generate_content(prompt).text})
+    except Exception as e:
+        return jsonify({"result": f"Error: {str(e)}"})
+
+
+# 🏆 4. AI Certificate Generator
+@app.route("/ai/generate-certificate", methods=["POST"])
+@login_required
+def ai_generate_certificate():
+    data = request.get_json() or {}
+    student_name = data.get("student_name", "Student")
+    achievement = data.get("achievement", "Academic Excellence")
+    cert_type = data.get("cert_type", "Achievement")
+    
+    if not ai_model: return jsonify({"result": "AI offline."})
+
+    prompt = f"""
+    Aap ek School Principal hain. Niche diye gaye student ke liye ek official Certificate ka content likhein.
+    
+    Certificate Type: {cert_type}
+    Student Name: {student_name}
+    Achievement: {achievement}
+    
+    Format: 
+    - Ek formal heading
+    - 3-4 lines ka body text (professional, Hinglish allowed)
+    - Closing line (Principal ki taraf se)
+    
+    Ye content aisa ho jo directly ek certificate par print ho sake.
+    """
+    try:
+        return jsonify({"result": ai_model.generate_content(prompt).text})
+    except Exception as e:
+        return jsonify({"result": f"Error: {str(e)}"})
+
+
+# 📢 5. AI Notice Generator
+@app.route("/ai/generate-notice", methods=["POST"])
+@login_required
+def ai_generate_notice():
+    data = request.get_json() or {}
+    topic = data.get("topic", "Holiday")
+    details = data.get("details", "")
+    audience = data.get("audience", "All Parents")
+    
+    if not ai_model: return jsonify({"result": "AI offline."})
+
+    prompt = f"""
+    Aap ek School Principal hain. Niche diye gaye topic par ek official School Notice banayein.
+    
+    Topic: {topic}
+    Audience: {audience}
+    Extra Details: {details}
+    
+    Format:
+    - "NOTICE" heading
+    - Date mention karein (aaj ki date: {today()})
+    - Body: 3-4 short lines (formal Hinglish)
+    - Sign-off: Principal Signature
+    
+    Ye notice school notice board par lagane layak ho.
+    """
+    try:
+        return jsonify({"result": ai_model.generate_content(prompt).text})
+    except Exception as e:
+        return jsonify({"result": f"Error: {str(e)}"})
+
+
+# ⚠️ 6. AI Fee Defaulter Predictor (Predictive Analytics)
+@app.route("/ai/predict-defaulters")
+@login_required
+def ai_predict_defaulters():
+    if not ai_model: return jsonify({"result": "AI offline."})
+
+    # Gather students with fee patterns
+    students = db_all("SELECT id, name, roll_no, class_name FROM students LIMIT 15")
+    student_data = []
+    for s in students:
+        bills = one("SELECT COUNT(*) c FROM bills WHERE roll_no=%s", (s['roll_no'],))["c"]
+        paid = one("SELECT COUNT(*) c FROM bills WHERE roll_no=%s AND status='Paid'", (s['roll_no'],))["c"]
+        due = one("SELECT COALESCE(SUM(balance),0) t FROM bills WHERE roll_no=%s AND balance>0", (s['roll_no'],))["t"]
+        att_total = one("SELECT COUNT(*) c FROM attendance WHERE roll_no=%s", (s['roll_no'],))["c"]
+        att_present = one("SELECT COUNT(*) c FROM attendance WHERE roll_no=%s AND status='Present'", (s['roll_no'],))["c"]
+        att_pct = round((att_present/att_total*100) if att_total > 0 else 100, 1)
+        pay_rate = round((paid/bills*100) if bills > 0 else 100, 1)
+        
+        student_data.append(f"- {s['name']} (Class {s['class_name']}): Pending Rs{due}, Payment Rate: {pay_rate}%, Attendance: {att_pct}%")
+
+    prompt = f"""
+    Aap ek Data Scientist hain jo School ke liye kaam karte hain. Niche data se predict karein ki agle mahine kaunse students fee default kar sakte hain.
+    
+    Rule of Thumb:
+    - Jiski Payment Rate < 50% AUR Attendance < 70% → HIGH RISK (Red Zone)
+    - Jiski Payment Rate 50-80% → MEDIUM RISK (Yellow)
+    - Baaki → LOW RISK (Green)
+    
+    Data:
+    {chr(10).join(student_data)}
+    
+    Analysis dijiye (Hinglish, max 5 bullet points):
+    1. Top 3 High Risk Students (kyun?)
+    2. Medium Risk Count
+    3. Principal ke liye 2 actionable suggestions
+    """
+    try:
+        return jsonify({"result": ai_model.generate_content(prompt).text})
+    except Exception as e:
+        return jsonify({"result": f"Error: {str(e)}"})
 # ====================================================== 
 # ======================================================
 # ---------------- RUN ----------------

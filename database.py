@@ -259,4 +259,43 @@ CREATE TABLE IF NOT EXISTS parent_users (
     contact VARCHAR(20),
     active INT DEFAULT 1
 );
+-- 🏫 Classes & Sections
+CREATE TABLE IF NOT EXISTS classes (
+    id SERIAL PRIMARY KEY,
+    class_name VARCHAR(50) UNIQUE,
+    sections VARCHAR(100),
+    class_teacher VARCHAR(100),
+    room_no VARCHAR(20)
+);
+
+-- 📚 Subjects
+CREATE TABLE IF NOT EXISTS subjects (
+    id SERIAL PRIMARY KEY,
+    subject_name VARCHAR(100) UNIQUE,
+    subject_code VARCHAR(20),
+    class_name VARCHAR(50),
+    teacher_name VARCHAR(100),
+    max_marks INT DEFAULT 100
+);
+
+-- 📋 Audit Log
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id SERIAL PRIMARY KEY,
+    user_name VARCHAR(100),
+    action VARCHAR(200),
+    details TEXT,
+    log_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 📢 Notice Board
+CREATE TABLE IF NOT EXISTS notices (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(200),
+    content TEXT,
+    category VARCHAR(50),
+    posted_by VARCHAR(100),
+    posted_date DATE,
+    priority VARCHAR(20) DEFAULT 'Normal',
+    active INT DEFAULT 1
+);
 init_db()

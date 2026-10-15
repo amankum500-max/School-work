@@ -755,6 +755,176 @@ def ai_assistant():
             return jsonify({"reply": f"AI Error: {str(e)}"})
             
     return render_template("ai_assistant.html")
+   # ==================== 🧠 ULTIMATE AI HUB ====================
+# Ye section school ko "AI-First" banata hai. Har feature me Gemini AI use hota hai.
+
+# 🎓 1. AI Career Counselor
+@app.route("/ai/career-counselor/<int:sid>")
+@login_required
+def ai_career_counselor(sid):
+    student = one("SELECT * FROM students WHERE id=%s", (sid,))
+    if not student: return jsonify({"result": "Student not found."})
+    
+    marks = db_all("SELECT subject, marks, total FROM marks WHERE roll_no=%s", (student['roll_no'],))
+    if not marks: return jsonify({"result": "Is student ka academic data available nahi hai. Pehle marks add karein."})
+    if not ai_model: return jsonify({"result": "AI offline hai. API Key check karein."})
+
+    marks_str = ", ".join([f"{m['subject']}: {round((m['marks']/m['total'])*100 if m['total']>0 else 0)}%" for m in marks])
+    prompt = f"""
+    Aap ek expert Career Counselor hain (India ke context me). Student ka data:
+    Name: {student['name']}, Class: {student['class_name']}, Marks: {marks_str}
+    
+    1. Iske marks ke hisaab se kaunse 3 career fields best hain (jaise Science, Commerce, Arts, Computer, Sports)?
+    2. Har field ke liye 1-line kyun recommend kar rahe ho.
+    3. Ek short 'Study Plan' bhi dijiye ki agle saal kaise padhe.
+    
+    Format: Hinglish me, 4-5 bullet points, positive aur professional tone.
+    """
+    try:
+        return jsonify({"result": ai_model.generate_content(prompt).text})
+    except Exception as e:
+        return jsonify({"result": f"AI Error: {str(e)}"})
+
+
+# 📝 2. AI Question Paper Generator
+@app.route("/ai/generate-paper", methods=["POST"])
+@login_required
+def ai_generate_paper():
+    data = request.get_json() or {}
+    subject = data.get("subject", "General")
+    class_name = data.get("class_name", "10")
+    total_marks = data.get("total_marks", 50)
+    
+    if not ai_model: return jsonify({"result": "AI offline."})
+
+    prompt = f"""
+    Aap ek Senior Teacher hain. Class {class_name} ke liye '{subject}' ka exam paper banayein.
+    Total Marks: {total_marks}
+    
+    Paper me ye sections hone chahiye:
+    - Section A: 5 Very Short Answer (1 mark each)
+    - Section B: 4 Short Answer (3 marks each)
+    - Section C: 2 Long Answer (5 marks each)
+    
+    Questions CBSE/State Board pattern par based ho. Har question ke baad marks likhein.
+    Format: Clean, readable, Hinglish me instructions.
+    """
+    try:
+        return jsonify({"result": ai_model.generate_content(prompt).text})
+    except Exception as e:
+        return jsonify({"result": f"Error: {str(e)}"})
+
+
+# 🔮 3. AI Performance Predictor (Next Exam Marks)
+@app.route("/ai/performance-predictor/<int:sid>")
+@login_required
+def ai_performance_predictor(sid):
+    student = one("SELECT * FROM students WHERE id=%s", (sid,))
+    marks = db_all("SELECT subject, marks, total FROM marks WHERE roll_no=%s", (student['roll_no'],))
+    if not student or not marks: return jsonify({"result": "Data missing."})
+    if not ai_model: return jsonify({"result": "AI offline."})
+
+    marks_str = ", ".join([f"{m['subject']}: {m['marks']}/{m['total']}" for m in marks])
+    prompt = f"""
+    Aap ek Data Analyst hain. Student: {student['name']}, Class: {student['class_name']}
+    Current Marks: {marks_str}
+    
+    Ye bataiye:
+    1. Agle exam me is student ka approximate total percentage kya hoga (prediction)?
+    2. Kaunse subject me improvement ki sabse zyada sambhavna hai?
+    3. Kaunse subject me risk hai (marks girne ka darr hai)?
+    
+    Format: 3 bullet points + ek predicted percentage. Hinglish me.
+    """
+    try:
+        return jsonify({"result": ai_model.generate_content(prompt).text})
+    except Exception as e:
+        return jsonify({"result": f"Error: {str(e)}"})
+
+
+# 🚨 4. AI Dropout Risk Detector (Bulk Analysis)
+@app.route("/ai/risk-analysis")
+@login_required
+def ai_risk_analysis():
+    if not ai_model: return jsonify({"result": "AI offline."})
+
+    # Gather data: Fee dues + Attendance + Marks
+    students = db_all("SELECT id, name, roll_no, class_name FROM students LIMIT 20")
+    risk_data = []
+    for s in students:
+        dues = one("SELECT COALESCE(SUM(balance),0) t FROM bills WHERE roll_no=%s AND balance>0", (s['roll_no'],))["t"]
+        att_total = one("SELECT COUNT(*) c FROM attendance WHERE roll_no=%s", (s['roll_no'],))["c"]
+        att_present = one("SELECT COUNT(*) c FROM attendance WHERE roll_no=%s AND status='Present'", (s['roll_no'],))["c"]
+        att_pct = round((att_present/att_total*100) if att_total > 0 else 100, 1)
+        
+        risk_data.append(f"- {s['name']} (Class {s['class_name']}): Dues=Rs{dues}, Attendance={att_pct}%")
+
+    prompt = f"""
+    Aap ek School Data Scientist hain. Niche students ka data hai. Aapko 'Dropout Risk' predict karna hai.
+    Rule: Jis student ki fees zyada pending hai AUR attendance kam hai, wo HIGH RISK me aata hai.
+    
+    Data:
+    {chr(10).join(risk_data)}
+    
+    Analysis dijiye (Hinglish me):
+    - Top 3 High Risk Students (naam ke saath, kyun risk me hain)
+    - Principal ke liye 2 actionable suggestions
+    
+    Format: Short aur sharp.
+    """
+    try:
+        return jsonify({"result": ai_model.generate_content(prompt).text})
+    except Exception as e:
+        return jsonify({"result": f"Error: {str(e)}"})
+
+
+# 📜 5. AI Report Card Remark Generator (Bulk)
+@app.route("/ai/bulk-remarks", methods=["POST"])
+@login_required
+def ai_bulk_remarks():
+    data = request.get_json() or {}
+    roll_nos = data.get("roll_nos", [])
+    if not roll_nos or not ai_model: return jsonify({"result": "No data or AI offline."})
+
+    results = []
+    for roll in roll_nos[:5]: # Limit 5 for speed
+        student = one("SELECT name, class_name FROM students WHERE roll_no=%s", (roll,))
+        marks = db_all("SELECT subject, marks, total FROM marks WHERE roll_no=%s", (roll,))
+        if not student or not marks: continue
+        
+        total_o = sum(float(m['marks'] or 0) for m in marks)
+        total_m = sum(float(m['total'] or 0) for m in marks)
+        pct = round((total_o/total_m*100) if total_m > 0 else 0, 1)
+        
+        prompt = f"Student {student['name']} (Class {student['class_name']}) ne {pct}% score kiya. Report card ke liye 1 short professional remark (Hinglish, max 15 words) likhiye. Positive aur encouraging."
+        try:
+            remark = ai_model.generate_content(prompt).text.strip()
+            results.append(f"**{student['name']}** ({pct}%): {remark}")
+        except: pass
+    
+    return jsonify({"result": "\n\n".join(results) if results else "Koi data nahi mila."})
+
+
+# 🗣️ 6. AI Smart Reply for WhatsApp (Parent Communication)
+@app.route("/ai/smart-reply", methods=["POST"])
+@login_required
+def ai_smart_reply():
+    data = request.get_json() or {}
+    student_name = data.get("name", "Student")
+    context = data.get("context", "fees pending")
+    
+    if not ai_model: return jsonify({"result": "AI offline."})
+    
+    prompt = f"""
+    Aap ek school principal hain. Parent ko WhatsApp message likhna hai. 
+    Student: {student_name}, Topic: {context}.
+    
+    Message aisa ho jo: polite, professional, aur Hinglish me ho. Max 3 lines.
+    """
+    try:
+        return jsonify({"result": ai_model.generate_content(prompt).text})
+    except Exception as e:
+        return jsonify({"result": f"Error: {str(e)}"})
 # ====================================================== 
 # ======================================================
 # ---------------- RUN ----------------

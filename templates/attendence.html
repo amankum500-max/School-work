@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <h2 class="fw-bold mb-4">📅 Daily Attendance</h2>
+    
+    <div class="card p-3 mb-4" style="border-radius: 15px;">
+        <form method="GET" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="small text-muted">Date</label>
+                <input type="date" name="date" value="{{ att_date }}" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+                <label class="small text-muted">Class</label>
+                <select name="class_name" class="form-select" required>
+                    <option value="">Select Class</option>
+                    {% for c in classes %}
+                    <option value="{{ c.class_name }}" {% if class_name == c.class_name %}selected{% endif %}>{{ c.class_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <button class="btn btn-primary w-100">Load Students</button>
+            </div>
+        </form>
+    </div>
+
+    {% if students %}
+    <form method="POST">
+        <input type="hidden" name="att_date" value="{{ att_date }}">
+        <input type="hidden" name="class_name" value="{{ class_name }}">
+        <div class="card p-3" style="border-radius: 15px;">
+            <table class="table table-hover">
+                <thead><tr><th>Roll No</th><th>Name</th><th>Status</th></tr></thead>
+                <tbody>
+                    {% for s in students %}
+                    <tr>
+                        <td>{{ s.roll_no }}</td>
+                        <td class="fw-bold">{{ s.name }}</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <input type="radio" class="btn-check" name="status_{{ s.roll_no }}" value="Present" id="p_{{ s.roll_no }}" checked>
+                                <label class="btn btn-outline-success btn-sm" for="p_{{ s.roll_no }}">Present</label>
+                                
+                                <input type="radio" class="btn-check" name="status_{{ s.roll_no }}" value="Absent" id="a_{{ s.roll_no }}">
+                                <label class="btn btn-outline-danger btn-sm" for="a_{{ s.roll_no }}">Absent</label>
+                                
+                                <input type="radio" class="btn-check" name="status_{{ s.roll_no }}" value="Late" id="l_{{ s.roll_no }}">
+                                <label class="btn btn-outline-warning btn-sm" for="l_{{ s.roll_no }}">Late</label>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button class="btn btn-primary w-100 mt-3">💾 Save Attendance</button>
+        </div>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

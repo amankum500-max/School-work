@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ cert_type|capitalize }} Certificate</title>
+    <style>
+        body { font-family: 'Georgia', serif; padding: 40px; background: #f0f2f5; }
+        .cert { max-width: 800px; margin: 0 auto; background: white; border: 15px double #1e3c72; padding: 60px 50px; position: relative; }
+        .cert::before { content: '🏫'; position: absolute; top: 20px; left: 50%; transform: translateX(-50%); font-size: 3rem; opacity: 0.1; }
+        .cert h1 { text-align: center; color: #1e3c72; font-size: 2.5rem; margin-bottom: 5px; }
+        .cert .sub { text-align: center; color: #764ba2; font-style: italic; margin-bottom: 30px; }
+        .cert-body { font-size: 1.15rem; line-height: 2; text-align: justify; margin: 30px 0; }
+        .cert-footer { display: flex; justify-content: space-between; margin-top: 60px; font-size: 0.95rem; }
+        .print-btn { position: fixed; top: 20px; right: 20px; padding: 10px 20px; background: #198754; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        .due-alert { background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 8px; text-align: center; margin-bottom: 20px; font-weight: bold; }
+        @media print { .print-btn, .due-alert { display: none; } body { padding: 0; } .cert { border-width: 10px; } }
+    </style>
+</head>
+<body>
+    <button class="print-btn" onclick="window.print()">🖨️ Print Certificate</button>
+    
+    {% if pending > 0 and cert_type != 'bonafide' %}
+    <div class="due-alert" style="max-width:800px; margin: 0 auto 20px;">⚠️ Student ki Rs {{ "{:,.0f}".format(pending) }} fees pending hai. Please clear before certificate issuance.</div>
+    {% endif %}
+    
+    <div class="cert">
+        <h1>{{ cert_type|upper }} CERTIFICATE</h1>
+        <div class="sub">School Management • Est. 2000</div>
+        
+        <div class="cert-body">
+            {% if ai_content %}
+                {{ ai_content }}
+            {% else %}
+                <p>This is to certify that <strong>{{ student.name }}</strong>, son/daughter of <strong>{{ student.father or '-' }}</strong>, is a bonafide student of this school. He/She is currently studying in Class <strong>{{ student.class_name }}-{{ student.section }}</strong> (Roll No: <strong>{{ student.roll_no }}</strong>).</p>
+                <p>Date of Birth: <strong>{{ student.dob or '-' }}</strong> | Admission Date: <strong>{{ student.admission_date or '-' }}</strong></p>
+                <p>We wish him/her all the success in future endeavors.</p>
+            {% endif %}
+        </div>
+        
+        <div class="cert-footer">
+            <div>Date: {{ today_date }}</div>
+            <div style="text-align:center;">
+                <div style="border-top: 1px solid #000; padding-top: 5px; width: 200px;">Principal Signature</div>
+            </div>
+            <div style="text-align:center;">
+                <div style="border-top: 1px solid #000; padding-top: 5px; width: 200px;">School Seal</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

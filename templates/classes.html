@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-4">
+    <h2 class="fw-bold mb-4">🏫 Class & Subject Management</h2>
+    
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card p-4" style="border-radius:15px;">
+                <h6 class="fw-bold mb-3">🏫 Classes</h6>
+                <form method="POST" action="{{ url_for('add_class') }}" class="row g-2 mb-3">
+                    <div class="col-md-4"><input name="class_name" class="form-control form-control-sm" placeholder="Class (e.g. 10)" required></div>
+                    <div class="col-md-3"><input name="sections" class="form-control form-control-sm" placeholder="Sections (A,B,C)"></div>
+                    <div class="col-md-3"><input name="class_teacher" class="form-control form-control-sm" placeholder="Class Teacher"></div>
+                    <div class="col-md-2"><button class="btn btn-primary btn-sm w-100">Add</button></div>
+                </form>
+                <table class="table table-sm">
+                    <thead><tr><th>Class</th><th>Sections</th><th>Teacher</th><th>×</th></tr></thead>
+                    <tbody>
+                        {% for c in classes %}
+                        <tr>
+                            <td class="fw-bold">{{ c.class_name }}</td>
+                            <td>{{ c.sections or '-' }}</td>
+                            <td>{{ c.class_teacher or '-' }}</td>
+                            <td><a href="{{ url_for('delete_class', cid=c.id) }}" class="text-danger">×</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card p-4" style="border-radius:15px;">
+                <h6 class="fw-bold mb-3">📚 Subjects</h6>
+                <form method="POST" action="{{ url_for('add_subject') }}" class="row g-2 mb-3">
+                    <div class="col-md-4"><input name="subject_name" class="form-control form-control-sm" placeholder="Subject" required></div>
+                    <div class="col-md-2"><input name="subject_code" class="form-control form-control-sm" placeholder="Code"></div>
+                    <div class="col-md-2"><input name="class_name" class="form-control form-control-sm" placeholder="Class"></div>
+                    <div class="col-md-2"><input name="teacher_name" class="form-control form-control-sm" placeholder="Teacher"></div>
+                    <div class="col-md-2"><button class="btn btn-primary btn-sm w-100">Add</button></div>
+                </form>
+                <table class="table table-sm">
+                    <thead><tr><th>Subject</th><th>Class</th><th>Teacher</th><th>×</th></tr></thead>
+                    <tbody>
+                        {% for s in subjects %}
+                        <tr>
+                            <td class="fw-bold">{{ s.subject_name }}</td>
+                            <td>{{ s.class_name or '-' }}</td>
+                            <td>{{ s.teacher_name or '-' }}</td>
+                            <td><a href="{{ url_for('delete_subject', sid=s.id) }}" class="text-danger">×</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Transfer Certificate</title>
+    <style>
+        body { font-family: 'Times New Roman', serif; padding: 40px; background: white; }
+        .tc-box { border: 2px solid #000; padding: 40px; max-width: 800px; margin: 0 auto; position: relative; }
+        .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+        .header h1 { margin: 0; font-size: 2.5rem; }
+        .header p { margin: 5px 0; font-size: 1rem; }
+        .content { font-size: 1.1rem; line-height: 2.5; }
+        .content strong { display: inline-block; width: 200px; }
+        .footer { margin-top: 50px; display: flex; justify-content: space-between; }
+        .print-btn { position: fixed; top: 20px; right: 20px; padding: 10px 20px; background: #0d6efd; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        .due-alert { background: #fee2e2; color: #991b1b; padding: 10px; border-radius: 8px; border: 1px solid #fecaca; margin-bottom: 20px; text-align: center; font-weight: bold; }
+        @media print { .print-btn { display: none; } }
+    </style>
+</head>
+<body>
+    <button class="print-btn" onclick="window.print()">🖨️ Print TC</button>
+    <div class="tc-box">
+        <div class="header">
+            <h1>🏫 School Management</h1>
+            <p>Affiliated to State Board | School Code: 12345</p>
+            <h3 style="margin-top: 15px; text-decoration: underline;">TRANSFER CERTIFICATE</h3>
+        </div>
+        
+        {% if pending > 0 %}
+        <div class="due-alert">⚠️ Warning: Student has pending dues of Rs {{ "{:,.0f}".format(pending) }}. Please clear before issuing TC.</div>
+        {% endif %}
+
+        <div class="content">
+            <p>This is to certify that <strong>{{ student.name }}</strong></p>
+            <p>Son/Daughter of <strong>{{ student.father or '-' }}</strong></p>
+            <p>was a bonafide student of this school. He/She was studying in Class <strong>{{ student.class_name }}-{{ student.section }}</strong>.</p>
+            <p>His/Her Date of Birth is <strong>{{ student.dob or '-' }}</strong>.</p>
+            <p>His/Her conduct and character during the stay in the school was <strong>Good</strong>.</p>
+            <p>All dues have been cleared / pending (strike out whichever is not applicable).</p>
+            <p>We wish him/her all the best for future endeavors.</p>
+        </div>
+        
+        <div class="footer">
+            <div>Date: {{ today() }}</div>
+            <div style="text-align: center; border-top: 1px solid #000; padding-top: 5px;">Principal Signature</div>
+        </div>
+    </div>
+</body>
+</html>

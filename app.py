@@ -1187,7 +1187,7 @@ def ai_smart_reply():
         return jsonify({"result": ai_model.generate_content(prompt).text})
     except Exception as e:
         return jsonify({"result": f"Error: {str(e)}"})
-       @app.route("/ai-hub")
+@app.route("/ai-hub")
 @login_required
 def ai_hub():
     # Students ka dropdown banane ke liye

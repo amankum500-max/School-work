@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="card p-4 mx-auto" style="max-width: 600px; border-radius: 15px;">
+        <h4 class="fw-bold mb-3">📤 Bulk Student Import</h4>
+        <p class="text-muted small">CSV file format: <code>roll_no, name, father, mother, class_name, section, gender, dob, contact, parent_contact, address, admission_date, transport_route, hostel</code></p>
+        <form method="POST" enctype="multipart/form-data">
+            <div class="mb-3">
+                <input type="file" name="file" class="form-control" accept=".csv" required>
+            </div>
+            <button class="btn btn-success w-100">🚀 Upload & Import</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

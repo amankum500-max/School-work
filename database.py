@@ -51,7 +51,14 @@ def init_db():
         total_copies INT DEFAULT 1,
         available_copies INT DEFAULT 1
     );
-
+CREATE TABLE IF NOT EXISTS students(
+    id SERIAL PRIMARY KEY,
+    roll_no TEXT UNIQUE,
+    name TEXT,
+    ...
+    hostel TEXT,
+    photo_url TEXT  -- <--- Ye line add karein
+);
     -- Book Issues Table
     CREATE TABLE IF NOT EXISTS book_issues (
         id SERIAL PRIMARY KEY,

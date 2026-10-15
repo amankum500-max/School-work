@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-4">
+    <h2 class="fw-bold mb-4">📋 Audit Log (Security Trail)</h2>
+    <div class="card p-3 mb-3" style="border-radius:15px;">
+        <form method="GET" class="d-flex gap-2">
+            <input name="q" value="{{ q }}" class="form-control" placeholder="Search by user or action...">
+            <button class="btn btn-primary">Search</button>
+        </form>
+    </div>
+    <div class="card p-3" style="border-radius:15px;">
+        <table class="table table-sm table-hover">
+            <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Details</th></tr></thead>
+            <tbody>
+                {% for l in logs %}
+                <tr>
+                    <td class="small text-muted">{{ l.log_time.strftime('%Y-%m-%d %H:%M') if l.log_time else '-' }}</td>
+                    <td><span class="badge bg-primary">{{ l.user_name }}</span></td>
+                    <td class="fw-bold">{{ l.action }}</td>
+                    <td class="small">{{ l.details or '-' }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="text-center text-muted">No logs yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

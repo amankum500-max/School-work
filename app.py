@@ -1402,6 +1402,215 @@ def ai_predict_defaulters():
         return jsonify({"result": ai_model.generate_content(prompt).text})
     except Exception as e:
         return jsonify({"result": f"Error: {str(e)}"})
+       # ==================== 🚀 PREMIUM MODULES (V4) ====================
+
+# ---------------- 🏠 HOSTEL MANAGEMENT ----------------
+@app.route("/hostel")
+@login_required
+def hostel():
+    rooms = db_all("SELECT * FROM hostel_rooms ORDER BY room_no")
+    allocations = db_all("""SELECT ha.*, s.name as student_name, s.class_name, s.contact 
+                            FROM hostel_allocations ha 
+                            LEFT JOIN students s ON ha.roll_no = s.roll_no 
+                            WHERE ha.status='Active' ORDER BY ha.allocated_date DESC""")
+    total_capacity = sum(r['capacity'] for r in rooms)
+    total_occupied = sum(r['occupied'] for r in rooms)
+    monthly_income = sum((r['monthly_fee'] * r['occupied']) for r in rooms)
+    return render_template("hostel.html", rooms=rooms, allocations=allocations,
+                           total_capacity=total_capacity, total_occupied=total_occupied,
+                           monthly_income=monthly_income)
+
+@app.route("/hostel/add-room", methods=["POST"])
+@login_required
+def add_hostel_room():
+    d = request.form
+    try:
+        run("""INSERT INTO hostel_rooms (room_no,floor,capacity,monthly_fee,warden_name,warden_contact)
+               VALUES (%s,%s,%s,%s,%s,%s)""",
+            (d["room_no"], d["floor"], d["capacity"], d["monthly_fee"] or 0,
+             d["warden_name"], d["warden_contact"]))
+        flash("✅ Hostel room added!", "success")
+    except Exception as e:
+        flash(f"Error: {e}", "error")
+    return redirect(url_for("hostel"))
+
+@app.route("/hostel/allocate", methods=["POST"])
+@login_required
+def allocate_hostel():
+    d = request.form
+    room = one("SELECT * FROM hostel_rooms WHERE room_no=%s", (d["room_no"],))
+    if not room or room['occupied'] >= room['capacity']:
+        flash("❌ Room full hai!", "error")
+        return redirect(url_for("hostel"))
+    
+    run("""INSERT INTO hostel_allocations (roll_no, room_no, allocated_date, status)
+           VALUES (%s,%s,%s,'Active')""", (d["roll_no"], d["room_no"], today()))
+    run("UPDATE hostel_rooms SET occupied = occupied + 1 WHERE room_no=%s", (d["room_no"],))
+    flash(f"✅ Student allocated to Room {d['room_no']}!", "success")
+    return redirect(url_for("hostel"))
+
+@app.route("/hostel/vacate/<int:aid>")
+@login_required
+def vacate_hostel(aid):
+    alloc = one("SELECT * FROM hostel_allocations WHERE id=%s", (aid,))
+    if alloc:
+        run("UPDATE hostel_allocations SET status='Vacated' WHERE id=%s", (aid,))
+        run("UPDATE hostel_rooms SET occupied = GREATEST(0, occupied - 1) WHERE room_no=%s", (alloc['room_no'],))
+        flash("✅ Room vacated!", "success")
+    return redirect(url_for("hostel"))
+
+# ---------------- 🚌 TRANSPORT MANAGEMENT ----------------
+@app.route("/transport")
+@login_required
+def transport():
+    routes = db_all("SELECT * FROM transport_routes ORDER BY route_number")
+    allocations = db_all("""SELECT ta.*, s.name as student_name, s.class_name, s.contact 
+                            FROM transport_allocations ta 
+                            LEFT JOIN students s ON ta.roll_no = s.roll_no 
+                            WHERE ta.status='Active' ORDER BY ta.route_number""")
+    total_buses = len(routes)
+    total_students = sum(r['occupied'] for r in routes)
+    monthly_income = sum((r['monthly_fee'] * r['occupied']) for r in routes)
+    return render_template("transport.html", routes=routes, allocations=allocations,
+                           total_buses=total_buses, total_students=total_students,
+                           monthly_income=monthly_income)
+
+@app.route("/transport/add-route", methods=["POST"])
+@login_required
+def add_transport_route():
+    d = request.form
+    try:
+        run("""INSERT INTO transport_routes 
+               (route_name,route_number,driver_name,driver_contact,vehicle_no,capacity,monthly_fee,stops)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
+            (d["route_name"], d["route_number"], d["driver_name"], d["driver_contact"],
+             d["vehicle_no"], d["capacity"], d["monthly_fee"] or 0, d["stops"]))
+        flash("✅ Transport route added!", "success")
+    except Exception as e:
+        flash(f"Error: {e}", "error")
+    return redirect(url_for("transport"))
+
+@app.route("/transport/allocate", methods=["POST"])
+@login_required
+def allocate_transport():
+    d = request.form
+    route = one("SELECT * FROM transport_routes WHERE route_number=%s", (d["route_number"],))
+    if not route or route['occupied'] >= route['capacity']:
+        flash("❌ Bus full hai!", "error")
+        return redirect(url_for("transport"))
+    
+    run("""INSERT INTO transport_allocations (roll_no, route_number, stop_name, allocated_date, status)
+           VALUES (%s,%s,%s,%s,'Active')""", (d["roll_no"], d["route_number"], d["stop_name"], today()))
+    run("UPDATE transport_routes SET occupied = occupied + 1 WHERE route_number=%s", (d["route_number"],))
+    flash(f"✅ Student added to Route {d['route_number']}!", "success")
+    return redirect(url_for("transport"))
+
+@app.route("/transport/remove/<int:aid>")
+@login_required
+def remove_transport(aid):
+    alloc = one("SELECT * FROM transport_allocations WHERE id=%s", (aid,))
+    if alloc:
+        run("UPDATE transport_allocations SET status='Removed' WHERE id=%s", (aid,))
+        run("UPDATE transport_routes SET occupied = GREATEST(0, occupied - 1) WHERE route_number=%s", (alloc['route_number'],))
+        flash("✅ Student removed from transport!", "success")
+    return redirect(url_for("transport"))
+
+# ---------------- 👨‍👩‍👧 PARENT PORTAL ----------------
+@app.route("/parent/login", methods=["GET", "POST"])
+def parent_login():
+    if request.method == "POST":
+        u = request.form["username"].strip()
+        p = request.form["password"].strip()
+        parent = one("SELECT * FROM parent_users WHERE username=%s AND password=%s AND active=1", (u, p))
+        if parent:
+            session["parent_user"] = parent["username"]
+            session["parent_name"] = parent["parent_name"]
+            session["parent_child"] = parent["child_roll_no"]
+            return redirect(url_for("parent_dashboard"))
+        flash("Invalid credentials!", "error")
+    return render_template("parent_login.html")
+
+@app.route("/parent/dashboard")
+def parent_dashboard():
+    if "parent_user" not in session:
+        return redirect(url_for("parent_login"))
+    
+    roll = session["parent_child"]
+    student = one("SELECT * FROM students WHERE roll_no=%s", (roll,))
+    if not student:
+        flash("Student data nahi mila!", "error")
+        return redirect(url_for("parent_login"))
+    
+    # Fee Summary
+    bills = db_all("SELECT * FROM bills WHERE roll_no=%s ORDER BY month DESC", (roll,))
+    payments = db_all("SELECT * FROM payments WHERE roll_no=%s ORDER BY pay_date DESC", (roll,))
+    total_billed = sum(b['total'] for b in bills)
+    total_paid = sum(p['amount'] for p in payments)
+    total_due = total_billed - total_paid
+    
+    # Marks
+    marks = db_all("SELECT * FROM marks WHERE roll_no=%s ORDER BY subject", (roll,))
+    total_o = sum(float(m['marks'] or 0) for m in marks)
+    total_m = sum(float(m['total'] or 0) for m in marks)
+    percentage = (total_o / total_m * 100) if total_m > 0 else 0
+    
+    # Attendance
+    att_total = one("SELECT COUNT(*) c FROM attendance WHERE roll_no=%s", (roll,))["c"]
+    att_present = one("SELECT COUNT(*) c FROM attendance WHERE roll_no=%s AND status='Present'", (roll,))["c"]
+    att_pct = round((att_present/att_total*100) if att_total > 0 else 100, 1)
+    
+    # Notices (AI-generated recent notices)
+    return render_template("parent_dashboard.html", student=student, bills=bills,
+                           payments=payments, total_due=total_due, marks=marks,
+                           percentage=percentage, att_pct=att_pct)
+
+@app.route("/parent/add-user", methods=["POST"])
+@login_required
+def add_parent_user():
+    d = request.form
+    try:
+        run("""INSERT INTO parent_users (username,password,parent_name,child_roll_no,contact)
+               VALUES (%s,%s,%s,%s,%s)""",
+            (d["username"], d["password"], d["parent_name"], d["child_roll_no"], d["contact"]))
+        flash("✅ Parent account created!", "success")
+    except Exception as e:
+        flash(f"Error: {e}", "error")
+    return redirect(url_for("students"))
+
+@app.route("/parent/logout")
+def parent_logout():
+    for key in ["parent_user", "parent_name", "parent_child"]:
+        session.pop(key, None)
+    return redirect(url_for("parent_login"))
+
+# 🧠 AI Hostel/Transport Fee Optimizer
+@app.route("/api/ai-optimize-hostel")
+@login_required
+def ai_optimize_hostel():
+    if not ai_model: return jsonify({"result": "AI offline."})
+    
+    rooms = db_all("SELECT room_no, capacity, occupied, monthly_fee FROM hostel_rooms")
+    routes = db_all("SELECT route_name, route_number, capacity, occupied, monthly_fee FROM transport_routes")
+    
+    prompt = f"""
+    Aap ek School Operations Manager hain. Hostel aur Transport ka data:
+    
+    HOSTEL:
+    {[f"Room {r['room_no']}: {r['occupied']}/{r['capacity']} occupied, Fee Rs{r['monthly_fee']}" for r in rooms]}
+    
+    TRANSPORT:
+    {[f"Route {r['route_number']} ({r['route_name']}): {r['occupied']}/{r['capacity']}, Fee Rs{r['monthly_fee']}" for r in routes]}
+    
+    Analysis dijiye (Hinglish, 4-5 bullets):
+    1. Which hostel rooms are under-utilized?
+    2. Which buses have low occupancy (loss-making)?
+    3. Suggestions to increase revenue
+    4. Any cost-cutting opportunities
+    """
+    try:
+        return jsonify({"result": ai_model.generate_content(prompt).text})
+    except Exception as e:
+        return jsonify({"result": f"Error: {str(e)}"})
 # ====================================================== 
 # ======================================================
 # ---------------- RUN ----------------

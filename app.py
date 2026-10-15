@@ -164,7 +164,107 @@ def dashboard():
         current_collection=current_collection
        )
 # ---------------- STUDENTS ----------------
-# ---------------- STUDENTS ----------------
+# ==================== 🆕 ADVANCED STUDENT MODULES ====================
+
+# 📅 1. Attendance System
+@app.route("/attendance", methods=["GET", "POST"])
+@login_required
+def attendance():
+    if request.method == "POST":
+        att_date = request.form["att_date"]
+        class_name = request.form["class_name"]
+        
+        # Delete old records for this date/class to prevent duplicates
+        run("""DELETE FROM attendance WHERE att_date=%s AND roll_no IN 
+               (SELECT roll_no FROM students WHERE class_name=%s)""", (att_date, class_name))
+        
+        present_count = absent_count = late_count = 0
+        for key, value in request.form.items():
+            if key.startswith("status_"):
+                roll_no = key.replace("status_", "")
+                run("INSERT INTO attendance (roll_no, att_date, status) VALUES (%s, %s, %s)", 
+                    (roll_no, att_date, value))
+                if value == "Present": present_count += 1
+                elif value == "Absent": absent_count += 1
+                elif value == "Late": late_count += 1
+                
+        flash(f"✅ Attendance marked! Present: {present_count}, Absent: {absent_count}, Late: {late_count}", "success")
+        return redirect(url_for("attendance", date=att_date, class_name=class_name))
+
+    att_date = request.args.get("date", today())
+    class_name = request.args.get("class_name", "")
+    students = []
+    if class_name:
+        students = db_all("SELECT * FROM students WHERE class_name=%s ORDER BY roll_no", (class_name,))
+    
+    classes = db_all("SELECT DISTINCT class_name FROM students WHERE class_name IS NOT NULL ORDER BY class_name")
+    return render_template("attendance.html", students=students, classes=classes, att_date=att_date, class_name=class_name)
+
+# 🏥 2. Save Health Record
+@app.route("/student/health/save/<int:sid>", methods=["POST"])
+@login_required
+def save_health(sid):
+    student = one("SELECT roll_no FROM students WHERE id=%s", (sid,))
+    if not student: return redirect(url_for("students"))
+    
+    d = request.form
+    existing = one("SELECT id FROM student_health WHERE roll_no=%s", (student['roll_no'],))
+    
+    if existing:
+        run("UPDATE student_health SET blood_group=%s, allergies=%s, emergency_contact=%s WHERE roll_no=%s",
+            (d["blood_group"], d["allergies"], d["emergency_contact"], student['roll_no']))
+    else:
+        run("INSERT INTO student_health (blood_group, allergies, emergency_contact, roll_no) VALUES (%s,%s,%s,%s)",
+            (d["blood_group"], d["allergies"], d["emergency_contact"], student['roll_no']))
+    flash("✅ Health record updated!", "success")
+    return redirect(url_for("student_profile", sid=sid))
+
+# 📤 3. Bulk CSV Import
+@app.route("/student/bulk-import", methods=["GET", "POST"])
+@login_required
+def bulk_import():
+    if request.method == "POST":
+        if 'file' not in request.files:
+            flash("Koi file select nahi ki gayi!", "error")
+            return redirect(request.url)
+        file = request.files['file']
+        if file.filename == '':
+            flash("File select karein!", "error")
+            return redirect(request.url)
+            
+        if file and file.filename.endswith('.csv'):
+            stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+            csv_input = csv.DictReader(stream)
+            count = 0
+            for row in csv_input:
+                try:
+                    run("""INSERT INTO students 
+                        (roll_no,name,father,mother,class_name,section,gender,dob,contact,parent_contact,address,admission_date,transport_route,hostel)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                        (row['roll_no'], row['name'], row.get('father',''), row.get('mother',''), row.get('class_name',''),
+                         row.get('section',''), row.get('gender',''), row.get('dob',''), row.get('contact',''),
+                         row.get('parent_contact',''), row.get('address',''), row.get('admission_date',''), 
+                         row.get('transport_route',''), row.get('hostel','')))
+                    count += 1
+                except Exception as e:
+                    print(f"Error importing {row.get('name')}: {e}")
+            flash(f"✅ {count} students successfully imported!", "success")
+        else:
+            flash("Sirf .csv file allowed hai!", "error")
+        return redirect(url_for("students"))
+    return render_template("bulk_import.html")
+
+# 📜 4. Transfer Certificate (TC) Generator
+@app.route("/student/tc/<int:sid>")
+@login_required
+def transfer_certificate(sid):
+    student = one("SELECT * FROM students WHERE id=%s", (sid,))
+    if not student: return redirect(url_for("students"))
+    
+    # Check if all dues are clear
+    pending = one("SELECT COALESCE(SUM(balance),0) t FROM bills WHERE roll_no=%s AND balance > 0", (student['roll_no'],))["t"]
+    
+    return render_template("transfer_certificate.html", student=student, pending=pending)
 @app.route("/students")
 @login_required
 def students():

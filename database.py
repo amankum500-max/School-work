@@ -204,4 +204,59 @@ CREATE TABLE IF NOT EXISTS attendance (
     att_date DATE NOT NULL,
     status VARCHAR(10) NOT NULL -- 'Present', 'Absent', 'Late'
 );
+-- 🏠 Hostel Rooms
+CREATE TABLE IF NOT EXISTS hostel_rooms (
+    id SERIAL PRIMARY KEY,
+    room_no VARCHAR(20) UNIQUE,
+    floor VARCHAR(20),
+    capacity INT DEFAULT 4,
+    occupied INT DEFAULT 0,
+    monthly_fee NUMERIC(10,2) DEFAULT 0,
+    warden_name VARCHAR(100),
+    warden_contact VARCHAR(20)
+);
+
+-- 🏠 Hostel Allocations
+CREATE TABLE IF NOT EXISTS hostel_allocations (
+    id SERIAL PRIMARY KEY,
+    roll_no VARCHAR(50),
+    room_no VARCHAR(20),
+    allocated_date DATE,
+    status VARCHAR(20) DEFAULT 'Active'
+);
+
+-- 🚌 Transport Routes
+CREATE TABLE IF NOT EXISTS transport_routes (
+    id SERIAL PRIMARY KEY,
+    route_name VARCHAR(100),
+    route_number VARCHAR(20),
+    driver_name VARCHAR(100),
+    driver_contact VARCHAR(20),
+    vehicle_no VARCHAR(50),
+    capacity INT DEFAULT 30,
+    occupied INT DEFAULT 0,
+    monthly_fee NUMERIC(10,2) DEFAULT 0,
+    stops TEXT
+);
+
+-- 🚌 Transport Allocations
+CREATE TABLE IF NOT EXISTS transport_allocations (
+    id SERIAL PRIMARY KEY,
+    roll_no VARCHAR(50),
+    route_number VARCHAR(20),
+    stop_name VARCHAR(100),
+    allocated_date DATE,
+    status VARCHAR(20) DEFAULT 'Active'
+);
+
+-- 👨‍👩‍👧 Parent Portal Users
+CREATE TABLE IF NOT EXISTS parent_users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(100) NOT NULL,
+    parent_name VARCHAR(100),
+    child_roll_no VARCHAR(50),
+    contact VARCHAR(20),
+    active INT DEFAULT 1
+);
 init_db()

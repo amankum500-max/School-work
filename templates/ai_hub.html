@@ -85,6 +85,51 @@
                 <p>Mic dabakar bolo, AI sunkar jawab dega.</p>
             </div>
         </div>
+        <!-- ============ V2 FEATURES ============ -->
+<div class="col-md-12 mt-3"><h5 class="fw-bold text-muted">⚡ Advanced AI Tools</h5><hr></div>
+
+<div class="col-md-4">
+    <div class="ai-card p-4" onclick="showFeature('timetable')">
+        <div class="ai-card-icon">📅</div>
+        <h5>AI Timetable Generator</h5>
+        <p>Puri class ka weekly timetable automatically generate karein.</p>
+    </div>
+</div>
+<div class="col-md-4">
+    <div class="ai-card p-4" onclick="showFeature('newsletter')">
+        <div class="ai-card-icon">📰</div>
+        <h5>AI School Newsletter</h5>
+        <p>Is mahine ka professional newsletter seconds me banayein.</p>
+    </div>
+</div>
+<div class="col-md-4">
+    <div class="ai-card p-4" onclick="showFeature('sentiment')">
+        <div class="ai-card-icon">💭</div>
+        <h5>AI Sentiment Analyzer</h5>
+        <p>Parents ke feedback ka mood aur key issues analyze karein.</p>
+    </div>
+</div>
+<div class="col-md-4">
+    <div class="ai-card p-4" onclick="showFeature('certificate')">
+        <div class="ai-card-icon">🏆</div>
+        <h5>AI Certificate Generator</h5>
+        <p>Achievement certificates ka content auto-generate.</p>
+    </div>
+</div>
+<div class="col-md-4">
+    <div class="ai-card p-4" onclick="showFeature('notice')">
+        <div class="ai-card-icon">📢</div>
+        <h5>AI Notice Generator</h5>
+        <p>Kisi bhi topic ka official school notice banayein.</p>
+    </div>
+</div>
+<div class="col-md-4">
+    <div class="ai-card p-4" onclick="showFeature('predictor2')">
+        <div class="ai-card-icon">⚠️</div>
+        <h5>Fee Defaulter Predictor</h5>
+        <p>AI batayega agle mahine kaun default karega.</p>
+    </div>
+</div>
     </div>
 
     <!-- Dynamic Result Area -->
@@ -165,6 +210,53 @@
             `;
         }
     }
+    // 🆕 V2 Features
+else if (type === 'timetable') {
+    title.innerText = '📅 AI Timetable Generator';
+    inputs.innerHTML = `
+        <div class="row g-2">
+            <div class="col-md-3"><input id="ttClass" class="form-control" placeholder="Class (e.g. 10)"></div>
+            <div class="col-md-6"><input id="ttSubjects" class="form-control" placeholder="Subjects (comma separated)"></div>
+            <div class="col-md-2"><input id="ttPeriods" type="number" class="form-control" placeholder="Periods (6)"></div>
+            <div class="col-md-1"><button class="btn btn-primary w-100" onclick="runAI('timetable')">🚀</button></div>
+        </div>
+    `;
+} else if (type === 'newsletter') {
+    title.innerText = '📰 AI School Newsletter';
+    inputs.innerHTML = `<button class="btn btn-primary" onclick="runAI('newsletter')">🚀 Generate Newsletter</button>`;
+} else if (type === 'sentiment') {
+    title.innerText = '💭 AI Sentiment Analyzer';
+    inputs.innerHTML = `
+        <textarea id="sentimentText" class="form-control mb-2" rows="3" placeholder="Parents ka feedback yahan paste karein..."></textarea>
+        <button class="btn btn-primary btn-sm" onclick="runAI('sentiment')">🚀 Analyze</button>
+    `;
+} else if (type === 'certificate') {
+    title.innerText = '🏆 AI Certificate Generator';
+    inputs.innerHTML = `
+        <div class="row g-2">
+            <div class="col-md-4"><input id="certName" class="form-control" placeholder="Student Name"></div>
+            <div class="col-md-4"><input id="certAchieve" class="form-control" placeholder="Achievement (e.g. 1st in Maths Olympiad)"></div>
+            <div class="col-md-2">
+                <select id="certType" class="form-select">
+                    <option>Achievement</option><option>Sports</option><option>Academic</option><option>Merit</option>
+                </select>
+            </div>
+            <div class="col-md-2"><button class="btn btn-primary w-100" onclick="runAI('certificate')">🚀</button></div>
+        </div>
+    `;
+} else if (type === 'notice') {
+    title.innerText = '📢 AI Notice Generator';
+    inputs.innerHTML = `
+        <div class="row g-2">
+            <div class="col-md-4"><input id="noticeTopic" class="form-control" placeholder="Topic (e.g. Diwali Holiday)"></div>
+            <div class="col-md-6"><input id="noticeDetails" class="form-control" placeholder="Extra details (optional)"></div>
+            <div class="col-md-2"><button class="btn btn-primary w-100" onclick="runAI('notice')">🚀</button></div>
+        </div>
+    `;
+} else if (type === 'predictor2') {
+    title.innerText = '⚠️ Fee Defaulter Predictor';
+    inputs.innerHTML = `<button class="btn btn-danger" onclick="runAI('predictor2')">🚀 Predict Defaulters</button>`;
+}
 
     async function runAI(type) {
         const loader = document.getElementById('aiLoader');
@@ -194,6 +286,39 @@
                 name: document.getElementById('parentName').value || 'Student',
                 context: document.getElementById('parentContext').value || 'Fees pending'
             });
+            // 🆕 V2 Features
+else if (type === 'timetable') {
+    url = '/ai/generate-timetable';
+    method = 'POST';
+    body = JSON.stringify({
+        class_name: document.getElementById('ttClass').value || '10',
+        subjects: document.getElementById('ttSubjects').value || 'Maths, Science, English, Hindi, Social Studies',
+        periods: document.getElementById('ttPeriods').value || 6
+    });
+} else if (type === 'newsletter') {
+    url = '/ai/generate-newsletter';
+} else if (type === 'sentiment') {
+    url = '/ai/sentiment-analysis';
+    method = 'POST';
+    body = JSON.stringify({ feedback: document.getElementById('sentimentText').value || 'Good school' });
+} else if (type === 'certificate') {
+    url = '/ai/generate-certificate';
+    method = 'POST';
+    body = JSON.stringify({
+        student_name: document.getElementById('certName').value || 'Student',
+        achievement: document.getElementById('certAchieve').value || 'Academic Excellence',
+        cert_type: document.getElementById('certType').value
+    });
+} else if (type === 'notice') {
+    url = '/ai/generate-notice';
+    method = 'POST';
+    body = JSON.stringify({
+        topic: document.getElementById('noticeTopic').value || 'Holiday',
+        details: document.getElementById('noticeDetails').value || ''
+    });
+} else if (type === 'predictor2') {
+    url = '/ai/predict-defaulters';
+}
         }
 
         try {

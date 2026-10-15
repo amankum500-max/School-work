@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <h2 class="fw-bold mb-4">📱 WhatsApp Broadcast System</h2>
+    <div class="card p-4 mx-auto" style="max-width:700px; border-radius:15px;">
+        <label class="form-label small fw-bold">Target Audience</label>
+        <select id="broadcastTarget" class="form-select mb-3">
+            <option value="all">📢 All Parents</option>
+            <option value="defaulters">⚠️ Fee Defaulters Only</option>
+        </select>
+
+        <label class="form-label small fw-bold">Message (Use {name} for personalization)</label>
+        <textarea id="broadcastMsg" class="form-control mb-3" rows="4" placeholder="Dear {name}, aapka beta/beti school me excellent perform kar raha hai. - School Management"></textarea>
+
+        <button class="btn btn-success w-100" onclick="sendBroadcast()">🚀 Generate & Send</button>
+        <p class="text-muted small mt-3 text-center">Note: WhatsApp links ek-ek karke open honge.</p>
+    </div>
+</div>
+
+<script>
+    async function sendBroadcast() {
+        const target = document.getElementById('broadcastTarget').value;
+        const message = document.getElementById('broadcastMsg').value;
+        if (!message.trim()) { alert('Message khali hai!'); return; }
+        
+        const res = await fetch('/api/broadcast', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ target, message })
+        });
+        const data = await res.json();
+        if (data.error) { alert(data.error); return; }
+        alert(`${data.count} recipients ke liye links generate ho gaye.`);
+        data.links.forEach((link, i) => setTimeout(() => window.open(link, '_blank'), i * 500));
+    }
+</script>
+{% endblock %}

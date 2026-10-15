@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <h2 class="fw-bold mb-0">🚌 Transport Management</h2>
+        <button class="btn btn-sm btn-primary rounded-pill" onclick="document.getElementById('routeForm').style.display='block'">➕ Add Route</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4"><div class="card p-3 text-center" style="border-radius:15px;"><div class="text-muted small">Total Buses</div><h4 class="fw-bold text-primary">{{ total_buses }}</h4></div></div>
+        <div class="col-md-4"><div class="card p-3 text-center" style="border-radius:15px;"><div class="text-muted small">Students Using Transport</div><h4 class="fw-bold text-success">{{ total_students }}</h4></div></div>
+        <div class="col-md-4"><div class="card p-3 text-center" style="border-radius:15px;"><div class="text-muted small">Monthly Income</div><h4 class="fw-bold text-info">₹{{ "{:,.0f}".format(monthly_income) }}</h4></div></div>
+    </div>
+
+    <!-- Add Route Form -->
+    <div id="routeForm" class="card p-4 mb-4" style="display:none; border-radius:15px;">
+        <h6 class="fw-bold mb-3">Add Transport Route</h6>
+        <form method="POST" action="{{ url_for('add_transport_route') }}" class="row g-2">
+            <div class="col-md-3"><input name="route_name" class="form-control" placeholder="Route Name" required></div>
+            <div class="col-md-2"><input name="route_number" class="form-control" placeholder="Route No" required></div>
+            <div class="col-md-3"><input name="driver_name" class="form-control" placeholder="Driver Name"></div>
+            <div class="col-md-2"><input name="driver_contact" class="form-control" placeholder="Driver Contact"></div>
+            <div class="col-md-2"><input name="vehicle_no" class="form-control" placeholder="Vehicle No"></div>
+            <div class="col-md-2"><input name="capacity" type="number" class="form-control" placeholder="Capacity" value="30"></div>
+            <div class="col-md-2"><input name="monthly_fee" type="number" class="form-control" placeholder="Monthly Fee"></div>
+            <div class="col-md-8"><input name="stops" class="form-control" placeholder="Stops (comma separated)"></div>
+            <div class="col-12 text-end"><button class="btn btn-success">Save Route</button></div>
+        </form>
+    </div>
+
+    <!-- Routes & Allocations -->
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card p-3" style="border-radius:15px;">
+                <h6 class="fw-bold mb-3">🚌 Routes ({{ routes|length }})</h6>
+                <table class="table table-sm">
+                    <thead><tr><th>Route</th><th>Driver</th><th>Occupancy</th><th>Fee</th></tr></thead>
+                    <tbody>
+                        {% for r in routes %}
+                        <tr>
+                            <td><span class="fw-bold">{{ r.route_number }}</span><br><small>{{ r.route_name }}</small></td>
+                            <td>{{ r.driver_name }}<br><small class="text-muted">{{ r.driver_contact }}</small></td>
+                            <td>{{ r.occupied }}/{{ r.capacity }}</td>
+                            <td>₹{{ r.monthly_fee }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card p-3" style="border-radius:15px;">
+                <h6 class="fw-bold mb-3">👥 Active Allocations</h6>
+                <form method="POST" action="{{ url_for('allocate_transport') }}" class="row g-2 mb-3">
+                    <div class="col-md-4"><input name="roll_no" class="form-control form-control-sm" placeholder="Roll No" required></div>
+                    <div class="col-md-3"><input name="route_number" class="form-control form-control-sm" placeholder="Route" required></div>
+                    <div class="col-md-3"><input name="stop_name" class="form-control form-control-sm" placeholder="Stop"></div>
+                    <div class="col-md-2"><button class="btn btn-primary btn-sm w-100">Add</button></div>
+                </form>
+                <table class="table table-sm">
+                    <thead><tr><th>Student</th><th>Route</th><th>Stop</th><th>Action</th></tr></thead>
+                    <tbody>
+                        {% for a in allocations %}
+                        <tr>
+                            <td>{{ a.student_name }}<br><small class="text-muted">{{ a.roll_no }}</small></td>
+                            <td>{{ a.route_number }}</td>
+                            <td>{{ a.stop_name }}</td>
+                            <td><a href="{{ url_for('remove_transport', aid=a.id) }}" class="btn btn-sm btn-outline-danger">×</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

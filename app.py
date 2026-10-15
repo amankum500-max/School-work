@@ -757,7 +757,269 @@ def ai_assistant():
     return render_template("ai_assistant.html")
    # ==================== 🧠 ULTIMATE AI HUB ====================
 # Ye section school ko "AI-First" banata hai. Har feature me Gemini AI use hota hai.
+# ==================== 🚀 ENTERPRISE MODULES (V3) ====================
 
+# 👨‍🏫 1. STAFF MANAGEMENT
+@app.route("/staff")
+@login_required
+def staff():
+    q = request.args.get("q", "")
+    if q:
+        rows = db_all("SELECT * FROM staff WHERE name LIKE %s OR subject LIKE %s ORDER BY name", (f"%{q}%", f"%{q}%"))
+    else:
+        rows = db_all("SELECT * FROM staff ORDER BY name")
+    total_salary = sum(s['salary'] or 0 for s in rows)
+    return render_template("staff.html", staff=rows, q=q, total_salary=total_salary)
+
+@app.route("/staff/add", methods=["POST"])
+@login_required
+def add_staff():
+    d = request.form
+    try:
+        run("""INSERT INTO staff (staff_id,name,designation,subject,contact,email,joining_date,salary,address)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+            (d["staff_id"], d["name"], d["designation"], d["subject"], d["contact"],
+             d["email"], d["joining_date"], d["salary"] or 0, d["address"]))
+        flash("✅ Staff member added!", "success")
+    except Exception as e:
+        flash(f"Error: {e}", "error")
+    return redirect(url_for("staff"))
+
+@app.route("/staff/delete/<int:sid>")
+@login_required
+def delete_staff(sid):
+    run("DELETE FROM staff WHERE id=%s", (sid,))
+    flash("🗑️ Staff deleted.", "success")
+    return redirect(url_for("staff"))
+
+# 🧠 AI Staff Performance Analyzer
+@app.route("/api/staff-ai-analysis")
+@login_required
+def staff_ai_analysis():
+    if not ai_model: return jsonify({"result": "AI offline."})
+    staff_count = one("SELECT COUNT(*) c FROM staff")["c"]
+    total_salary = one("SELECT COALESCE(SUM(salary),0) t FROM staff")["t"]
+    subjects = db_all("SELECT subject, COUNT(*) c FROM staff WHERE subject IS NOT NULL GROUP BY subject ORDER BY c DESC")
+    
+    prompt = f"""
+    Aap ek School HR Manager hain. Niche staff data ka analysis karein:
+    - Total Staff: {staff_count}
+    - Total Monthly Salary Bill: Rs {total_salary}
+    - Subject-wise Distribution: {[dict(s) for s in subjects]}
+    
+    3-4 bullet points me (Hinglish) analysis dijiye:
+    1. Staffing adequate hai ya kam?
+    2. Kisi subject me teachers ki shortage?
+    3. Salary budget optimize kaise karein?
+    """
+    try:
+        return jsonify({"result": ai_model.generate_content(prompt).text})
+    except Exception as e:
+        return jsonify({"result": f"Error: {str(e)}"})
+
+# 📚 2. DIGITAL LIBRARY
+@app.route("/library")
+@login_required
+def library():
+    q = request.args.get("q", "")
+    if q:
+        books = db_all("SELECT * FROM library_books WHERE title LIKE %s OR author LIKE %s ORDER BY title", (f"%{q}%", f"%{q}%"))
+    else:
+        books = db_all("SELECT * FROM library_books ORDER BY title")
+    issued = db_all("""SELECT bi.*, s.name as student_name, lb.title 
+                       FROM book_issues bi 
+                       LEFT JOIN students s ON bi.roll_no = s.roll_no 
+                       LEFT JOIN library_books lb ON bi.book_id = lb.book_id 
+                       WHERE bi.status='Issued' ORDER BY bi.due_date""")
+    return render_template("library.html", books=books, issued=issued, q=q)
+
+@app.route("/library/add-book", methods=["POST"])
+@login_required
+def add_book():
+    d = request.form
+    try:
+        run("""INSERT INTO library_books (book_id,title,author,category,total_copies,available_copies)
+               VALUES (%s,%s,%s,%s,%s,%s)""",
+            (d["book_id"], d["title"], d["author"], d["category"], d["copies"], d["copies"]))
+        flash("✅ Book added to library!", "success")
+    except Exception as e:
+        flash(f"Error: {e}", "error")
+    return redirect(url_for("library"))
+
+@app.route("/library/issue", methods=["POST"])
+@login_required
+def issue_book():
+    d = request.form
+    book = one("SELECT * FROM library_books WHERE book_id=%s", (d["book_id"],))
+    if not book or book['available_copies'] <= 0:
+        flash("❌ Book available nahi hai!", "error")
+        return redirect(url_for("library"))
+    
+    from datetime import datetime as dt
+    issue_date = today()
+    due_date = (dt.now() + timedelta(days=14)).strftime("%Y-%m-%d")
+    
+    run("""INSERT INTO book_issues (book_id,roll_no,issue_date,due_date,status)
+           VALUES (%s,%s,%s,%s,'Issued')""", (d["book_id"], d["roll_no"], issue_date, due_date))
+    run("UPDATE library_books SET available_copies = available_copies - 1 WHERE book_id=%s", (d["book_id"],))
+    flash(f"✅ Book issued! Due date: {due_date}", "success")
+    return redirect(url_for("library"))
+
+@app.route("/library/return/<int:iid>")
+@login_required
+def return_book(iid):
+    issue = one("SELECT * FROM book_issues WHERE id=%s", (iid,))
+    if issue:
+        from datetime import datetime as dt
+        return_date = today()
+        due = dt.strptime(issue['due_date'], "%Y-%m-%d")
+        today_dt = dt.strptime(return_date, "%Y-%m-%d")
+        late_days = (today_dt - due).days
+        fine = max(0, late_days * 5) # Rs 5 per day fine
+        
+        run("UPDATE book_issues SET return_date=%s, status='Returned', fine=%s WHERE id=%s",
+            (return_date, fine, iid))
+        run("UPDATE library_books SET available_copies = available_copies + 1 WHERE book_id=%s", (issue['book_id'],))
+        flash(f"✅ Book returned! Fine: Rs {fine}", "success")
+    return redirect(url_for("library"))
+
+# 📝 3. AI QUIZ GENERATOR
+@app.route("/ai/quiz-generator", methods=["POST"])
+@login_required
+def ai_quiz_generator():
+    data = request.get_json() or {}
+    subject = data.get("subject", "General Knowledge")
+    class_name = data.get("class_name", "10")
+    num_q = int(data.get("num_questions", 5))
+    
+    if not ai_model: return jsonify({"result": "AI offline."})
+    
+    prompt = f"""
+    Aap ek expert teacher hain. Class {class_name} ke students ke liye '{subject}' par {num_q} multiple-choice questions (MCQs) banayein.
+    
+    Format:
+    **Q1. Question text**
+    A) Option 1
+    B) Option 2
+    C) Option 3
+    D) Option 4
+    **Answer: X**
+    
+    Question difficulty: Class level ke hisaab se. Hinglish me questions ho.
+    """
+    try:
+        return jsonify({"result": ai_model.generate_content(prompt).text})
+    except Exception as e:
+        return jsonify({"result": f"Error: {str(e)}"})
+
+# 📅 4. AI EXAM SCHEDULE GENERATOR
+@app.route("/ai/exam-schedule", methods=["POST"])
+@login_required
+def ai_exam_schedule():
+    data = request.get_json() or {}
+    class_name = data.get("class_name", "10")
+    subjects = data.get("subjects", "Maths, Science, English, Hindi, Social Studies")
+    start_date = data.get("start_date", today())
+    exam_type = data.get("exam_type", "Half Yearly")
+    
+    if not ai_model: return jsonify({"result": "AI offline."})
+    
+    prompt = f"""
+    Aap ek School Exam Coordinator hain. Class {class_name} ke liye '{exam_type}' exam ka schedule banayein.
+    
+    Subjects: {subjects}
+    Start Date: {start_date}
+    
+    Rules:
+    - Har subject ke beech 1 din ka gap rakhein
+    - Har exam ka timing: 9:00 AM to 12:00 PM
+    - Chhote subjects (languages) ke baad gap zyada
+    - Saturday/Sunday par exam nahi
+    
+    Format: Ek clean Markdown table (Date | Day | Subject | Time | Duration).
+    """
+    try:
+        return jsonify({"result": ai_model.generate_content(prompt).text})
+    except Exception as e:
+        return jsonify({"result": f"Error: {str(e)}"})
+
+# 🏆 5. AI AWARD RECOMMENDER
+@app.route("/ai/award-recommender")
+@login_required
+def ai_award_recommender():
+    if not ai_model: return jsonify({"result": "AI offline."})
+    
+    students = db_all("""
+        SELECT s.id, s.name, s.roll_no, s.class_name,
+               COALESCE(SUM(CAST(m.marks AS FLOAT)), 0) as total_marks,
+               COALESCE(SUM(CAST(m.total AS FLOAT)), 0) as max_marks
+        FROM students s LEFT JOIN marks m ON s.roll_no = m.roll_no
+        GROUP BY s.id, s.name, s.roll_no, s.class_name
+        ORDER BY (COALESCE(SUM(CAST(m.marks AS FLOAT)), 0) / NULLIF(COALESCE(SUM(CAST(m.total AS FLOAT)), 1), 0)) DESC
+        LIMIT 10
+    """)
+    
+    data = []
+    for s in students:
+        pct = round((s['total_marks']/s['max_marks']*100) if s['max_marks'] > 0 else 0, 1)
+        att_total = one("SELECT COUNT(*) c FROM attendance WHERE roll_no=%s", (s['roll_no'],))["c"]
+        att_present = one("SELECT COUNT(*) c FROM attendance WHERE roll_no=%s AND status='Present'", (s['roll_no'],))["c"]
+        att_pct = round((att_present/att_total*100) if att_total > 0 else 100, 1)
+        dues = one("SELECT COALESCE(SUM(balance),0) t FROM bills WHERE roll_no=%s AND balance>0", (s['roll_no'],))["t"]
+        data.append(f"- {s['name']} (Class {s['class_name']}): Marks={pct}%, Attendance={att_pct}%, Dues=Rs{dues}")
+    
+    prompt = f"""
+    Aap ek School Award Committee ke Head hain. Niche students ka data hai. 
+    Inme se har student ke liye ek appropriate award suggest karein.
+    
+    Award Categories:
+    - 🏆 Best Academic Performer
+    - 📚 Most Disciplined Student
+    - 🌟 Best All-Rounder
+    - 💯 Perfect Attendance
+    - 🎯 Most Improved
+    
+    Data:
+    {chr(10).join(data)}
+    
+    Format: Har student ke liye 1 line - Name + Award + Reason (Hinglish).
+    """
+    try:
+        return jsonify({"result": ai_model.generate_content(prompt).text})
+    except Exception as e:
+        return jsonify({"result": f"Error: {str(e)}"})
+
+# 📱 6. SMS/WhatsApp BROADCAST SYSTEM
+@app.route("/broadcast")
+@login_required
+def broadcast():
+    return render_template("broadcast.html")
+
+@app.route("/api/broadcast", methods=["POST"])
+@login_required
+def api_broadcast():
+    data = request.get_json() or {}
+    target = data.get("target", "all") # all, defaulters, class_10
+    message = data.get("message", "").strip()
+    
+    if not message: return jsonify({"error": "Message khali hai!"})
+    
+    recipients = []
+    if target == "all":
+        recipients = db_all("SELECT name, parent_contact as phone FROM students WHERE parent_contact IS NOT NULL")
+    elif target == "defaulters":
+        recipients = db_all("""SELECT DISTINCT s.name, s.parent_contact as phone 
+                               FROM students s JOIN bills b ON s.roll_no = b.roll_no 
+                               WHERE b.balance > 0 AND s.parent_contact IS NOT NULL""")
+    
+    links = []
+    for r in recipients[:20]: # Limit for safety
+        phone = str(r['phone'])
+        if len(phone) == 10: phone = "91" + phone
+        personalized_msg = message.replace("{name}", r['name'])
+        links.append(f"https://wa.me/{phone}?text={quote(personalized_msg)}")
+    
+    return jsonify({"links": links, "count": len(links)})
 # 🎓 1. AI Career Counselor
 @app.route("/ai/career-counselor/<int:sid>")
 @login_required

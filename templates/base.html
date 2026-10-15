@@ -26,7 +26,8 @@
 <div class="sidebar" id="sidebar">
   <a href="{{ url_for('ai_hub') }}">🧠 AI Command Center</a>
   <a href="{{ url_for('dashboard') }}">📊 Dashboard</a>
-  <a href="{{ url_for('students') }}">🎓 Students</a>
+  <a href="{{ url_for('students') }}">
+    <a href="{{ url_for('generate_certificate', sid=s.id, cert_type='bonafide') }}" target="_blank" class="action-btn btn-view" style="background:#e0f2fe; color:#0284c7;">📜</a>🎓 Students</a>
   <a href="{{ url_for('fees') }}">💵 Fee Structure</a>
   <a href="{{ url_for('bills') }}">🧾 Bills</a>
   <a href="{{ url_for('collect') }}">💰 Fee Collection</a>

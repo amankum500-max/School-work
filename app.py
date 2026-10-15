@@ -1611,6 +1611,221 @@ def ai_optimize_hostel():
         return jsonify({"result": ai_model.generate_content(prompt).text})
     except Exception as e:
         return jsonify({"result": f"Error: {str(e)}"})
+       # ==================== 🚀 FINAL ENTERPRISE MODULES (V5) ====================
+
+# Helper: Audit Logger
+def log_action(action, details=""):
+    try:
+        user = session.get("user", "System")
+        run("INSERT INTO audit_logs (user_name, action, details) VALUES (%s, %s, %s)",
+            (user, action, details))
+    except: pass
+
+# ---------------- 🏫 CLASS & SUBJECT MANAGEMENT ----------------
+@app.route("/classes")
+@login_required
+def classes():
+    cls_list = db_all("SELECT * FROM classes ORDER BY class_name")
+    subjects = db_all("SELECT * FROM subjects ORDER BY class_name, subject_name")
+    return render_template("classes.html", classes=cls_list, subjects=subjects)
+
+@app.route("/class/add", methods=["POST"])
+@login_required
+def add_class():
+    d = request.form
+    try:
+        run("INSERT INTO classes (class_name, sections, class_teacher, room_no) VALUES (%s,%s,%s,%s)",
+            (d["class_name"], d["sections"], d["class_teacher"], d["room_no"]))
+        log_action("Class Added", f"Class: {d['class_name']}")
+        flash("✅ Class added!", "success")
+    except Exception as e:
+        flash(f"Error: {e}", "error")
+    return redirect(url_for("classes"))
+
+@app.route("/class/delete/<int:cid>")
+@login_required
+def delete_class(cid):
+    run("DELETE FROM classes WHERE id=%s", (cid,))
+    log_action("Class Deleted", f"ID: {cid}")
+    flash("🗑️ Class deleted.", "success")
+    return redirect(url_for("classes"))
+
+@app.route("/subject/add", methods=["POST"])
+@login_required
+def add_subject():
+    d = request.form
+    try:
+        run("""INSERT INTO subjects (subject_name, subject_code, class_name, teacher_name, max_marks)
+               VALUES (%s,%s,%s,%s,%s)""",
+            (d["subject_name"], d["subject_code"], d["class_name"], d["teacher_name"], d["max_marks"] or 100))
+        log_action("Subject Added", f"Subject: {d['subject_name']}")
+        flash("✅ Subject added!", "success")
+    except Exception as e:
+        flash(f"Error: {e}", "error")
+    return redirect(url_for("classes"))
+
+@app.route("/subject/delete/<int:sid>")
+@login_required
+def delete_subject(sid):
+    run("DELETE FROM subjects WHERE id=%s", (sid,))
+    flash("🗑️ Subject deleted.", "success")
+    return redirect(url_for("classes"))
+
+# ---------------- 📋 AUDIT LOG ----------------
+@app.route("/audit-logs")
+@login_required
+def audit_logs():
+    q = request.args.get("q", "")
+    if q:
+        logs = db_all("""SELECT * FROM audit_logs WHERE user_name LIKE %s OR action LIKE %s 
+                         ORDER BY log_time DESC LIMIT 200""", (f"%{q}%", f"%{q}%"))
+    else:
+        logs = db_all("SELECT * FROM audit_logs ORDER BY log_time DESC LIMIT 200")
+    return render_template("audit_logs.html", logs=logs, q=q)
+
+# ---------------- 📢 NOTICE BOARD ----------------
+@app.route("/notices", methods=["GET", "POST"])
+@login_required
+def notices():
+    if request.method == "POST":
+        d = request.form
+        run("""INSERT INTO notices (title, content, category, posted_by, posted_date, priority)
+               VALUES (%s,%s,%s,%s,%s,%s)""",
+            (d["title"], d["content"], d["category"], session.get("name", "Admin"), today(), d["priority"]))
+        log_action("Notice Posted", f"Title: {d['title']}")
+        flash("✅ Notice posted!", "success")
+        return redirect(url_for("notices"))
+    
+    notices_list = db_all("SELECT * FROM notices WHERE active=1 ORDER BY posted_date DESC, id DESC")
+    return render_template("notices.html", notices=notices_list)
+
+@app.route("/notice/delete/<int:nid>")
+@login_required
+def delete_notice(nid):
+    run("UPDATE notices SET active=0 WHERE id=%s", (nid,))
+    flash("🗑️ Notice removed.", "success")
+    return redirect(url_for("notices"))
+
+# AI Notice content generator (existing route already there, just confirming)
+
+# ---------------- 📜 CERTIFICATE GENERATOR ----------------
+@app.route("/certificate/<int:sid>/<cert_type>")
+@login_required
+def generate_certificate(sid, cert_type):
+    student = one("SELECT * FROM students WHERE id=%s", (sid,))
+    if not student:
+        flash("Student not found!", "error")
+        return redirect(url_for("students"))
+    
+    pending = one("SELECT COALESCE(SUM(balance),0) t FROM bills WHERE roll_no=%s AND balance>0", (student['roll_no'],))["t"]
+    
+    # AI-generated certificate content
+    ai_content = ""
+    if ai_model:
+        type_map = {
+            "bonafide": "Bonafide Certificate (proof that student studies here)",
+            "character": "Character Certificate (proof of good conduct)",
+            "migration": "Migration Certificate (for school transfer)",
+            "merit": "Merit Certificate (for academic excellence)",
+            "sports": "Sports Certificate (for sports achievement)"
+        }
+        cert_desc = type_map.get(cert_type, "Achievement Certificate")
+        prompt = f"""
+        Aap School Principal hain. Student {student['name']} (Class {student['class_name']}-{student['section']}, Roll {student['roll_no']}, Father: {student['father']}) ke liye ek {cert_desc} ka official content likhein.
+        
+        Format:
+        - 1 line heading
+        - 3-4 lines formal body (English/Hinglish mix, professional)
+        - Closing line
+        Max 60 words.
+        """
+        try:
+            ai_content = ai_model.generate_content(prompt).text
+        except: pass
+
+    return render_template("certificate.html", student=student, cert_type=cert_type,
+                           pending=pending, ai_content=ai_content, today_date=today())
+
+# ---------------- 📊 ATTENDANCE ANALYTICS ----------------
+@app.route("/attendance/analytics")
+@login_required
+def attendance_analytics():
+    # Last 7 days data
+    last_7 = []
+    for i in range(6, -1, -1):
+        d = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
+        total = one("SELECT COUNT(*) c FROM attendance WHERE att_date=%s", (d,))["c"]
+        present = one("SELECT COUNT(*) c FROM attendance WHERE att_date=%s AND status='Present'", (d,))["c"]
+        absent = one("SELECT COUNT(*) c FROM attendance WHERE att_date=%s AND status='Absent'", (d,))["c"]
+        last_7.append({"date": d, "present": present, "absent": absent, "total": total})
+    
+    # Class-wise attendance
+    class_att = db_all("""
+        SELECT s.class_name, 
+               COUNT(a.id) as total,
+               SUM(CASE WHEN a.status='Present' THEN 1 ELSE 0 END) as present
+        FROM students s LEFT JOIN attendance a ON s.roll_no = a.roll_no
+        WHERE s.class_name IS NOT NULL
+        GROUP BY s.class_name ORDER BY s.class_name
+    """)
+    
+    # Overall stats
+    overall_total = one("SELECT COUNT(*) c FROM attendance")["c"]
+    overall_present = one("SELECT COUNT(*) c FROM attendance WHERE status='Present'")["c"]
+    overall_pct = round((overall_present/overall_total*100) if overall_total > 0 else 0, 1)
+    
+    # Top absentees (30 days)
+    month_ago = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+    top_absentees = db_all("""
+        SELECT s.name, s.roll_no, s.class_name, COUNT(*) as absences
+        FROM attendance a JOIN students s ON a.roll_no = s.roll_no
+        WHERE a.status='Absent' AND a.att_date >= %s
+        GROUP BY s.name, s.roll_no, s.class_name
+        ORDER BY absences DESC LIMIT 10
+    """, (month_ago,))
+    
+    return render_template("attendance_analytics.html", last_7=last_7,
+                           class_att=class_att, overall_pct=overall_pct,
+                           top_absentees=top_absentees,
+                           overall_present=overall_present, overall_total=overall_total)
+
+# ---------------- 💾 BACKUP & RESTORE ----------------
+@app.route("/backup")
+@login_required
+def backup():
+    return render_template("backup.html")
+
+@app.route("/backup/download")
+@login_required
+def backup_download():
+    tables = ["students", "bills", "payments", "expenses", "marks", "staff",
+              "library_books", "book_issues", "hostel_rooms", "hostel_allocations",
+              "transport_routes", "transport_allocations", "notices", "classes", "subjects"]
+    
+    output = io.StringIO()
+    output.write(f"-- School ERP Backup\n-- Generated: {datetime.now()}\n\n")
+    
+    for table in tables:
+        try:
+            rows = db_all(f"SELECT * FROM {table}")
+            if not rows: continue
+            cols = ", ".join(rows[0].keys())
+            output.write(f"\n-- Table: {table} ({len(rows)} rows)\n")
+            for r in rows:
+                vals = ", ".join([f"'{str(v).replace(chr(39), chr(39)+chr(39))}'" if v is not None else "NULL" for v in r.values()])
+                output.write(f"INSERT INTO {table} ({cols}) VALUES ({vals});\n")
+        except: continue
+    
+    mem = io.BytesIO(output.getvalue().encode("utf-8"))
+    log_action("Backup Downloaded")
+    return send_file(mem, mimetype="application/sql", as_attachment=True,
+                     download_name=f"school_backup_{datetime.now():%Y%m%d_%H%M}.sql")
+
+# ---------------- 🏠 DASHBOARD UPDATE (Notices + Audit) ----------------
+@app.route("/notice-board-public")
+def notice_board_public():
+    notices_list = db_all("SELECT * FROM notices WHERE active=1 ORDER BY priority DESC, posted_date DESC LIMIT 20")
+    return render_template("notice_board_public.html", notices=notices_list)
 # ====================================================== 
 # ======================================================
 # ---------------- RUN ----------------

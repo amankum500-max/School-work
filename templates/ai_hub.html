@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    :root { --ai-grad: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .ai-hero { background: var(--ai-grad); color: white; border-radius: 20px; padding: 30px; position: relative; overflow: hidden; }
+    .ai-hero::before { content: ''; position: absolute; top: -50%; right: -20%; width: 60%; height: 200%; background: rgba(255,255,255,0.08); transform: rotate(30deg); }
+    .ai-hero h1 { position: relative; z-index: 2; font-weight: 800; font-size: 2rem; }
+    .ai-hero p { position: relative; z-index: 2; opacity: 0.9; }
+    
+    .ai-card { background: white; border-radius: 16px; border: none; box-shadow: 0 6px 25px rgba(0,0,0,0.06); transition: all 0.3s ease; height: 100%; cursor: pointer; }
+    .ai-card:hover { transform: translateY(-8px); box-shadow: 0 15px 35px rgba(102, 126, 234, 0.2); }
+    .ai-card-icon { font-size: 2.5rem; margin-bottom: 10px; }
+    .ai-card h5 { font-weight: 700; font-size: 1.05rem; color: #2c3e50; }
+    .ai-card p { font-size: 0.85rem; color: #6c757d; }
+    
+    .result-box { background: #f8f9fa; border-radius: 12px; padding: 20px; margin-top: 20px; white-space: pre-wrap; font-size: 0.92rem; line-height: 1.7; border-left: 4px solid #667eea; display: none; }
+    .result-box.active { display: block; animation: fadeIn 0.4s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .loading-spinner { display: none; text-align: center; padding: 20px; }
+    .loading-spinner.active { display: block; }
+    .spinner-ai { width: 50px; height: 50px; border: 5px solid #e9ecef; border-top: 5px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+    .voice-btn { background: #dc3545; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 1.3rem; box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4); cursor: pointer; transition: 0.2s; }
+    .voice-btn:hover { transform: scale(1.1); }
+</style>
+
+<div class="container-fluid py-4">
+    <!-- Hero Section -->
+    <div class="ai-hero mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1>🧠 AI Command Center</h1>
+                <p class="mb-0">Powered by Google Gemini • School ka Future, Aaj</p>
+            </div>
+            <div class="text-end">
+                <div style="font-size: 3rem;">🤖</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Feature Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="ai-card p-4" onclick="showFeature('career')">
+                <div class="ai-card-icon">🎓</div>
+                <h5>AI Career Counselor</h5>
+                <p>Student ke marks ke hisaab se best career field suggest karein.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="ai-card p-4" onclick="showFeature('paper')">
+                <div class="ai-card-icon">📝</div>
+                <h5>AI Question Paper</h5>
+                <p>Kisi bhi subject ka exam paper seconds me generate karein.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="ai-card p-4" onclick="showFeature('risk')">
+                <div class="ai-card-icon">🚨</div>
+                <h5>Dropout Risk Detector</h5>
+                <p>AI predict karega kaunse students risk me hain.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="ai-card p-4" onclick="showFeature('predictor')">
+                <div class="ai-card-icon">🔮</div>
+                <h5>Performance Predictor</h5>
+                <p>Agle exam me student ka score predict karein.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="ai-card p-4" onclick="showFeature('smartreply')">
+                <div class="ai-card-icon">💬</div>
+                <h5>AI Smart WhatsApp Reply</h5>
+                <p>Parents ke liye professional message auto-generate.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="ai-card p-4" onclick="showFeature('voice')">
+                <div class="ai-card-icon">🗣️</div>
+                <h5>Voice Assistant</h5>
+                <p>Mic dabakar bolo, AI sunkar jawab dega.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dynamic Result Area -->
+    <div class="card p-4" style="border-radius: 16px; box-shadow: 0 6px 25px rgba(0,0,0,0.05);">
+        <div id="featureHeader" class="mb-3" style="display:none;">
+            <h5 class="fw-bold mb-2" id="featureTitle">AI Result</h5>
+            <div id="featureInputs"></div>
+        </div>
+        
+        <div class="loading-spinner" id="aiLoader">
+            <div class="spinner-ai"></div>
+            <p class="text-muted mt-3 mb-0">AI soch raha hai... ⏳</p>
+        </div>
+        
+        <div class="result-box" id="aiResult"></div>
+        
+        <div id="aiPlaceholder" class="text-center py-5">
+            <div style="font-size: 4rem; opacity: 0.2;">🤖</div>
+            <p class="text-muted mt-3">Koi bhi AI feature card par click karein</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const studentOptions = `{{ students_options|safe }}`;
+
+    function showFeature(type) {
+        document.getElementById('aiPlaceholder').style.display = 'none';
+        document.getElementById('aiResult').classList.remove('active');
+        document.getElementById('featureHeader').style.display = 'block';
+        
+        const title = document.getElementById('featureTitle');
+        const inputs = document.getElementById('featureInputs');
+        const result = document.getElementById('aiResult');
+        const loader = document.getElementById('aiLoader');
+        
+        inputs.innerHTML = '';
+        result.innerHTML = '';
+        loader.classList.remove('active');
+
+        // Different UI for each feature
+        if (type === 'career' || type === 'predictor') {
+            title.innerText = (type === 'career' ? '🎓 AI Career Counselor' : '🔮 Performance Predictor');
+            inputs.innerHTML = `
+                <select id="studentSelect" class="form-select mb-2">${studentOptions}</select>
+                <button class="btn btn-primary btn-sm" onclick="runAI('${type}')">🚀 Analyze</button>
+            `;
+        } else if (type === 'paper') {
+            title.innerText = '📝 AI Question Paper Generator';
+            inputs.innerHTML = `
+                <div class="row g-2">
+                    <div class="col-md-4"><input id="paperSubject" class="form-control" placeholder="Subject (e.g. Maths)"></div>
+                    <div class="col-md-3"><input id="paperClass" class="form-control" placeholder="Class (e.g. 10)"></div>
+                    <div class="col-md-3"><input id="paperMarks" class="form-control" placeholder="Total Marks (50)" type="number"></div>
+                    <div class="col-md-2"><button class="btn btn-primary w-100" onclick="runAI('paper')">Generate</button></div>
+                </div>
+            `;
+        } else if (type === 'risk') {
+            title.innerText = '🚨 AI Dropout Risk Analysis';
+            inputs.innerHTML = `<button class="btn btn-danger" onclick="runAI('risk')">🚀 Run Risk Analysis</button>`;
+        } else if (type === 'smartreply') {
+            title.innerText = '💬 AI Smart WhatsApp Reply';
+            inputs.innerHTML = `
+                <div class="row g-2">
+                    <div class="col-md-5"><input id="parentName" class="form-control" placeholder="Student Name"></div>
+                    <div class="col-md-5"><input id="parentContext" class="form-control" placeholder="Context (e.g. Fees Pending)"></div>
+                    <div class="col-md-2"><button class="btn btn-primary w-100" onclick="runAI('smartreply')">Generate</button></div>
+                </div>
+            `;
+        } else if (type === 'voice') {
+            title.innerText = '🗣️ AI Voice Assistant';
+            inputs.innerHTML = `
+                <div class="text-center">
+                    <button class="voice-btn mb-3" onclick="startVoice()">🎤</button>
+                    <p class="text-muted small">Mic dabayein aur bolein</p>
+                    <input id="voiceOutput" class="form-control" placeholder="Aapki awaaz yahan dikhegi..." readonly>
+                </div>
+            `;
+        }
+    }
+
+    async function runAI(type) {
+        const loader = document.getElementById('aiLoader');
+        const result = document.getElementById('aiResult');
+        result.classList.remove('active');
+        loader.classList.add('active');
+
+        let url = '', body = null, method = 'GET';
+
+        if (type === 'career' || type === 'predictor') {
+            const sid = document.getElementById('studentSelect').value;
+            url = type === 'career' ? `/ai/career-counselor/${sid}` : `/ai/performance-predictor/${sid}`;
+        } else if (type === 'paper') {
+            url = '/ai/generate-paper';
+            method = 'POST';
+            body = JSON.stringify({
+                subject: document.getElementById('paperSubject').value || 'General',
+                class_name: document.getElementById('paperClass').value || '10',
+                total_marks: document.getElementById('paperMarks').value || 50
+            });
+        } else if (type === 'risk') {
+            url = '/ai/risk-analysis';
+        } else if (type === 'smartreply') {
+            url = '/ai/smart-reply';
+            method = 'POST';
+            body = JSON.stringify({
+                name: document.getElementById('parentName').value || 'Student',
+                context: document.getElementById('parentContext').value || 'Fees pending'
+            });
+        }
+
+        try {
+            const options = { method };
+            if (body) { options.headers = { 'Content-Type': 'application/json' }; options.body = body; }
+            
+            const res = await fetch(url, options);
+            const data = await res.json();
+            loader.classList.remove('active');
+            result.innerHTML = data.result || data.reply || 'No result.';
+            result.classList.add('active');
+        } catch (e) {
+            loader.classList.remove('active');
+            result.innerHTML = '❌ Error: ' + e.message;
+            result.classList.add('active');
+        }
+    }
+
+    // Voice Assistant
+    function startVoice() {
+        if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+            alert("Aapka browser voice support nahi karta. Chrome use karein.");
+            return;
+        }
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SR();
+        recognition.lang = 'hi-IN';
+        
+        recognition.start();
+        document.getElementById('voiceOutput').value = "🎤 Sun raha hu...";
+        
+        recognition.onresult = async (event) => {
+            const transcript = event.results[0][0].transcript;
+            document.getElementById('voiceOutput').value = "You: " + transcript;
+            
+            const result = document.getElementById('aiResult');
+            result.classList.add('active');
+            result.innerHTML = '<i>AI soch raha hai...</i>';
+            
+            try {
+                const res = await fetch('/ai-assistant', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: transcript })
+                });
+                const data = await res.json();
+                result.innerHTML = `<b>AI:</b> ${data.reply}`;
+                
+                // 🔊 Text-to-Speech
+                const speech = new SpeechSynthesisUtterance(data.reply);
+                speech.lang = 'hi-IN';
+                window.speechSynthesis.speak(speech);
+            } catch (e) {
+                result.innerHTML = "Error.";
+            }
+        };
+    }
+</script>
+{% endblock %}

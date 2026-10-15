@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-0">👨‍🏫 Staff Management</h2>
+            <span class="text-muted small">Total Monthly Salary: ₹{{ "{:,.0f}".format(total_salary) }}</span>
+        </div>
+        <button class="btn btn-primary btn-sm rounded-pill" onclick="toggleForm()">➕ Add Staff</button>
+    </div>
+
+    <div id="staffForm" class="card p-4 mb-4" style="display:none; border-radius:15px;">
+        <form method="POST" action="{{ url_for('add_staff') }}" class="row g-2">
+            <div class="col-md-2"><input name="staff_id" class="form-control" placeholder="Staff ID" required></div>
+            <div class="col-md-3"><input name="name" class="form-control" placeholder="Full Name" required></div>
+            <div class="col-md-2"><input name="designation" class="form-control" placeholder="Designation"></div>
+            <div class="col-md-2"><input name="subject" class="form-control" placeholder="Subject"></div>
+            <div class="col-md-3"><input name="contact" class="form-control" placeholder="Contact"></div>
+            <div class="col-md-3"><input name="email" class="form-control" placeholder="Email"></div>
+            <div class="col-md-2"><input name="joining_date" class="form-control" placeholder="Joining Date"></div>
+            <div class="col-md-2"><input name="salary" type="number" class="form-control" placeholder="Salary"></div>
+            <div class="col-md-5"><input name="address" class="form-control" placeholder="Address"></div>
+            <div class="col-md-12 text-end"><button class="btn btn-success">Save</button></div>
+        </form>
+    </div>
+
+    <div class="card p-4 mb-4" style="border-radius:15px;">
+        <div class="d-flex justify-content-between mb-3">
+            <h5 class="fw-bold mb-0">Staff List ({{ staff|length }})</h5>
+            <button class="btn btn-sm btn-outline-primary" onclick="runStaffAI()">🤖 AI HR Analysis</button>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead><tr><th>ID</th><th>Name</th><th>Designation</th><th>Subject</th><th>Contact</th><th>Salary</th><th>Action</th></tr></thead>
+                <tbody>
+                    {% for s in staff %}
+                    <tr>
+                        <td>{{ s.staff_id }}</td>
+                        <td class="fw-bold">{{ s.name }}</td>
+                        <td>{{ s.designation or '-' }}</td>
+                        <td>{{ s.subject or '-' }}</td>
+                        <td>{{ s.contact or '-' }}</td>
+                        <td>₹{{ "{:,.0f}".format(s.salary or 0) }}</td>
+                        <td><a href="{{ url_for('delete_staff', sid=s.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete?')">🗑️</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="aiResult" class="card p-4" style="display:none; border-radius:15px; background:#f8f9fa;"></div>
+</div>
+
+<script>
+    function toggleForm() { const f = document.getElementById('staffForm'); f.style.display = f.style.display === 'none' ? 'block' : 'none'; }
+    async function runStaffAI() {
+        const box = document.getElementById('aiResult');
+        box.style.display = 'block';
+        box.innerHTML = '<div class="spinner-border text-primary"></div> AI soch raha hai...';
+        const res = await fetch('/api/staff-ai-analysis');
+        const data = await res.json();
+        box.innerHTML = '<h6 class="fw-bold">🤖 AI HR Analysis</h6><div style="white-space:pre-wrap;">' + data.result + '</div>';
+    }
+</script>
+{% endblock %}

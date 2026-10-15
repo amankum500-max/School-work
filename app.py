@@ -164,16 +164,69 @@ def dashboard():
         current_collection=current_collection
        )
 # ---------------- STUDENTS ----------------
+# ---------------- STUDENTS ----------------
 @app.route("/students")
 @login_required
 def students():
     q = request.args.get("q", "")
+    class_filter = request.args.get("class_filter", "")
+    fee_filter = request.args.get("fee_filter", "")
+    page = request.args.get("page", 1, type=int)
+    per_page = 10
+    offset = (page - 1) * per_page
+
+    # Base query
+    query = """
+        SELECT s.*, COALESCE(SUM(b.balance), 0) as total_balance
+        FROM students s
+        LEFT JOIN bills b ON s.roll_no = b.roll_no AND b.balance > 0
+        WHERE 1=1
+    """
+    params = []
+    
     if q:
-        rows = db_all("SELECT * FROM students WHERE name LIKE %s OR roll_no LIKE %s ORDER BY roll_no",
-                      (f"%{q}%", f"%{q}%"))
-    else:
-        rows = db_all("SELECT * FROM students ORDER BY roll_no")
-    return render_template("students.html", students=rows, q=q)
+        query += " AND (s.name LIKE %s OR s.roll_no LIKE %s)"
+        params.extend([f"%{q}%", f"%{q}%"])
+    if class_filter:
+        query += " AND s.class_name = %s"
+        params.append(class_filter)
+    if fee_filter == "due":
+        query += " AND b.balance > 0"
+    elif fee_filter == "paid":
+        query += " AND b.balance IS NULL"
+
+    query += """
+        GROUP BY s.id, s.roll_no, s.name, s.father, s.mother, s.class_name, s.section, 
+                 s.gender, s.dob, s.contact, s.parent_contact, s.address, s.admission_date, 
+                 s.transport_route, s.hostel
+        ORDER BY s.roll_no
+        LIMIT %s OFFSET %s
+    """
+    params.extend([per_page, offset])
+    rows = db_all(query, tuple(params))
+
+    # Get total count for pagination
+    count_query = "SELECT COUNT(DISTINCT s.id) as c FROM students s LEFT JOIN bills b ON s.roll_no = b.roll_no AND b.balance > 0 WHERE 1=1"
+    count_params = []
+    if q:
+        count_query += " AND (s.name LIKE %s OR s.roll_no LIKE %s)"
+        count_params.extend([f"%{q}%", f"%{q}%"])
+    if class_filter:
+        count_query += " AND s.class_name = %s"
+        count_params.append(class_filter)
+    if fee_filter == "due":
+        count_query += " AND b.balance > 0"
+    elif fee_filter == "paid":
+        count_query += " AND b.balance IS NULL"
+    
+    total_students = one(count_query, tuple(count_params))["c"]
+    total_pages = (total_students + per_page - 1) // per_page
+
+    classes = db_all("SELECT DISTINCT class_name FROM students WHERE class_name IS NOT NULL ORDER BY class_name")
+    
+    return render_template("students.html", students=rows, q=q, 
+                           class_filter=class_filter, fee_filter=fee_filter,
+                           page=page, total_pages=total_pages, classes=classes)
 
 @app.route("/student/add", methods=["POST"])
 @login_required
@@ -193,6 +246,23 @@ def add_student():
         flash(f"Error: {e}", "error")
     return redirect(url_for("students"))
 
+@app.route("/student/edit/<int:sid>", methods=["GET", "POST"])
+@login_required
+def edit_student(sid):
+    if request.method == "POST":
+        d = request.form
+        run("""UPDATE students SET
+            roll_no=%s, name=%s, father=%s, mother=%s, class_name=%s, section=%s,
+            gender=%s, dob=%s, contact=%s, parent_contact=%s, address=%s,
+            admission_date=%s, transport_route=%s, hostel=%s WHERE id=%s""",
+            (d["roll_no"], d["name"], d["father"], d["mother"], d["class_name"],
+             d["section"], d["gender"], d["dob"], d["contact"], d["parent_contact"],
+             d["address"], d["admission_date"], d["transport_route"], d["hostel"], sid))
+        flash("✅ Student updated!", "success")
+        return redirect(url_for("students"))
+    student = one("SELECT * FROM students WHERE id=%s", (sid,))
+    return render_template("edit_student.html", student=student)
+
 @app.route("/student/delete/<int:sid>")
 @login_required
 def delete_student(sid):
@@ -200,6 +270,79 @@ def delete_student(sid):
     flash("🗑️ Student deleted.", "success")
     return redirect(url_for("students"))
 
+# ==================== 🆕 ADVANCED STUDENT FEATURES ====================
+
+# 👤 1. Student Profile (360 View)
+@app.route("/student/profile/<int:sid>")
+@login_required
+def student_profile(sid):
+    student = one("SELECT * FROM students WHERE id=%s", (sid,))
+    if not student:
+        flash("Student not found!", "error")
+        return redirect(url_for("students"))
+    
+    # Fee History (Ledger)
+    bills = db_all("SELECT * FROM bills WHERE roll_no=%s ORDER BY month DESC", (student['roll_no'],))
+    payments = db_all("SELECT * FROM payments WHERE roll_no=%s ORDER BY pay_date DESC", (student['roll_no'],))
+    
+    # Marks & Performance
+    marks = db_all("SELECT * FROM marks WHERE roll_no=%s ORDER BY subject", (student['roll_no'],))
+    total_obtained = sum(float(m['marks'] or 0) for m in marks)
+    total_max = sum(float(m['total'] or 0) for m in marks)
+    percentage = (total_obtained / total_max * 100) if total_max > 0 else 0
+
+    # Fee Summary
+    total_billed = sum(b['total'] for b in bills)
+    total_paid = sum(p['amount'] for p in payments)
+    total_due = total_billed - total_paid
+
+    return render_template("student_profile.html", student=student, bills=bills, 
+                           payments=payments, marks=marks, total_obtained=total_obtained,
+                           total_max=total_max, percentage=percentage, total_due=total_due)
+
+# 🪪 2. ID Card Generator
+@app.route("/student/id-card/<int:sid>")
+@login_required
+def student_id_card(sid):
+    student = one("SELECT * FROM students WHERE id=%s", (sid,))
+    return render_template("id_card.html", student=student)
+
+# 📤 3. Export CSV (Already added earlier, keeping it here)
+@app.route("/students/export")
+@login_required
+def export_students():
+    rows = db_all("SELECT * FROM students ORDER BY roll_no")
+    si = io.StringIO()
+    if rows:
+        w = csv.DictWriter(si, fieldnames=rows[0].keys())
+        w.writeheader()
+        for r in rows: w.writerow(dict(r))
+    mem = io.BytesIO(si.getvalue().encode("utf-8"))
+    return send_file(mem, mimetype="text/csv", as_attachment=True, download_name=f"students_{datetime.now():%Y%m%d}.csv")
+
+# 📢 4. Bulk WhatsApp Reminder API
+@app.route("/api/bulk-reminders", methods=["POST"])
+@login_required
+def bulk_reminders():
+    data = request.get_json() or {}
+    student_ids = data.get("student_ids", [])
+    
+    if not student_ids:
+        return jsonify({"error": "No students selected"})
+    
+    links = []
+    for sid in student_ids:
+        student = one("SELECT * FROM students WHERE id=%s", (sid,))
+        if student:
+            pending = one("SELECT SUM(balance) t FROM bills WHERE roll_no=%s AND balance > 0", (student['roll_no'],))["t"]
+            if pending and pending > 0:
+                phone = student['parent_contact'] or student['contact']
+                if phone and len(str(phone)) == 10:
+                    phone = "91" + str(phone)
+                msg = f"Dear Parent, {student['name']} ki Rs {pending} fees pending hai. Kripya jaldi jama karein. - School Management"
+                links.append(f"https://wa.me/{phone}?text={quote(msg)}")
+    
+    return jsonify({"links": links, "count": len(links)})
 # ---------------- FEE STRUCTURE ----------------
 @app.route("/fees")
 @login_required

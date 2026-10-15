@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0">📢 Notice Board</h2>
+        <button class="btn btn-primary btn-sm rounded-pill" onclick="document.getElementById('noticeForm').style.display='block'">➕ Post Notice</button>
+    </div>
+
+    <div id="noticeForm" class="card p-4 mb-4" style="display:none; border-radius:15px;">
+        <form method="POST" class="row g-2">
+            <div class="col-md-6"><input name="title" class="form-control" placeholder="Notice Title" required></div>
+            <div class="col-md-3">
+                <select name="category" class="form-select">
+                    <option>General</option><option>Exam</option><option>Holiday</option>
+                    <option>Event</option><option>Fees</option><option>Sports</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="priority" class="form-select">
+                    <option>Normal</option><option>Important</option><option>Urgent</option>
+                </select>
+            </div>
+            <div class="col-12"><textarea name="content" class="form-control" rows="4" placeholder="Notice content..." required></textarea></div>
+            <div class="col-12 text-end"><button class="btn btn-success">Post Notice</button></div>
+        </form>
+    </div>
+
+    <div class="row g-3">
+        {% for n in notices %}
+        <div class="col-md-6">
+            <div class="card p-3" style="border-radius:15px; border-left: 5px solid {% if n.priority=='Urgent' %}#dc3545{% elif n.priority=='Important' %}#ffc107{% else %}#0d6efd{% endif %};">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <span class="badge bg-secondary">{{ n.category }}</span>
+                        {% if n.priority == 'Urgent' %}<span class="badge bg-danger">URGENT</span>{% endif %}
+                        {% if n.priority == 'Important' %}<span class="badge bg-warning text-dark">Important</span>{% endif %}
+                    </div>
+                    <a href="{{ url_for('delete_notice', nid=n.id) }}" class="text-danger" onclick="return confirm('Remove?')">×</a>
+                </div>
+                <h5 class="fw-bold mt-2">{{ n.title }}</h5>
+                <p class="mb-1">{{ n.content }}</p>
+                <div class="text-muted small mt-2">
+                    Posted by {{ n.posted_by }} • {{ n.posted_date }}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12 text-center text-muted py-5">No notices posted yet.</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

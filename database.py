@@ -153,4 +153,20 @@ def today():
     return datetime.now().strftime("%Y-%m-%d")
 
 # Initialize DB on import
+-- 🏥 Health Records Table
+CREATE TABLE IF NOT EXISTS student_health (
+    id SERIAL PRIMARY KEY,
+    roll_no VARCHAR(50) REFERENCES students(roll_no) ON DELETE CASCADE,
+    blood_group VARCHAR(10),
+    allergies TEXT,
+    emergency_contact VARCHAR(20)
+);
+
+-- 📅 Attendance Table
+CREATE TABLE IF NOT EXISTS attendance (
+    id SERIAL PRIMARY KEY,
+    roll_no VARCHAR(50) REFERENCES students(roll_no) ON DELETE CASCADE,
+    att_date DATE NOT NULL,
+    status VARCHAR(10) NOT NULL -- 'Present', 'Absent', 'Late'
+);
 init_db()

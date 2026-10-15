@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0">👤 Student Profile</h2>
+        <div>
+            <a href="{{ url_for('student_id_card', sid=student.id) }}" target="_blank" class="btn btn-outline-primary btn-sm">🪪 ID Card</a>
+            <a href="{{ url_for('edit_student', sid=student.id) }}" class="btn btn-warning btn-sm">✏️ Edit</a>
+            <a href="{{ url_for('students') }}" class="btn btn-outline-secondary btn-sm">← Back</a>
+        </div>
+    </div>
+
+    <!-- Top Info Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card p-3 text-center" style="border-radius: 15px;">
+                <div class="fs-1">👨‍🎓</div>
+                <h5 class="fw-bold mb-0">{{ student.name }}</h5>
+                <span class="text-muted small">Roll No: {{ student.roll_no }}</span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 text-center" style="border-radius: 15px;">
+                <div class="text-muted small">Class & Section</div>
+                <h4 class="fw-bold text-primary">{{ student.class_name }}-{{ student.section }}</h4>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 text-center" style="border-radius: 15px;">
+                <div class="text-muted small">Academic Score</div>
+                <h4 class="fw-bold text-success">{{ "%.1f"|format(percentage) }}%</h4>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 text-center" style="border-radius: 15px;">
+                <div class="text-muted small">Total Due</div>
+                <h4 class="fw-bold text-danger">₹{{ "{:,.0f}".format(total_due) }}</h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-3" id="profileTab" role="tablist">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#overview">📋 Overview</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#fees">💰 Fee Ledger</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#marks">📝 Marks</button></li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- Overview -->
+        <div class="tab-pane fade show active" id="overview">
+            <div class="card p-4" style="border-radius: 15px;">
+                <h5 class="fw-bold mb-3">Personal Details</h5>
+                <div class="row g-3">
+                    <div class="col-md-6"><strong>Father's Name:</strong> {{ student.father or '-' }}</div>
+                    <div class="col-md-6"><strong>Mother's Name:</strong> {{ student.mother or '-' }}</div>
+                    <div class="col-md-6"><strong>Date of Birth:</strong> {{ student.dob or '-' }}</div>
+                    <div class="col-md-6"><strong>Gender:</strong> {{ student.gender or '-' }}</div>
+                    <div class="col-md-6"><strong>Contact:</strong> {{ student.contact or '-' }}</div>
+                    <div class="col-md-6"><strong>Parent Contact:</strong> {{ student.parent_contact or '-' }}</div>
+                    <div class="col-md-6"><strong>Admission Date:</strong> {{ student.admission_date or '-' }}</div>
+                    <div class="col-md-6"><strong>Transport Route:</strong> {{ student.transport_route or '-' }}</div>
+                    <div class="col-md-6"><strong>Hostel:</strong> {{ 'Yes' if student.hostel == 'Y' else 'No' }}</div>
+                    <div class="col-12"><strong>Address:</strong> {{ student.address or '-' }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fee Ledger -->
+        <div class="tab-pane fade" id="fees">
+            <div class="card p-4" style="border-radius: 15px;">
+                <h5 class="fw-bold mb-3">Fee Bills & Payments</h5>
+                <table class="table table-sm table-custom">
+                    <thead><tr><th>Month</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead>
+                    <tbody>
+                        {% for b in bills %}
+                        <tr>
+                            <td>{{ b.month }}</td>
+                            <td>₹{{ "{:,.0f}".format(b.total) }}</td>
+                            <td>₹{{ "{:,.0f}".format(b.paid) }}</td>
+                            <td class="text-danger">₹{{ "{:,.0f}".format(b.balance) }}</td>
+                            <td><span class="badge bg-{{ 'success' if b.status == 'Paid' else 'danger' }}">{{ b.status }}</span></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-center text-muted">No bills generated yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Marks -->
+        <div class="tab-pane fade" id="marks">
+            <div class="card p-4" style="border-radius: 15px;">
+                <h5 class="fw-bold mb-3">Academic Performance</h5>
+                <table class="table table-sm table-custom">
+                    <thead><tr><th>Subject</th><th>Exam</th><th>Marks</th><th>Total</th><th>%</th></tr></thead>
+                    <tbody>
+                        {% for m in marks %}
+                        <tr>
+                            <td>{{ m.subject }}</td>
+                            <td>{{ m.exam }}</td>
+                            <td>{{ m.marks }}</td>
+                            <td>{{ m.total }}</td>
+                            <td>{{ "%.1f"|format((m.marks/m.total)*100 if m.total > 0 else 0) }}%</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-center text-muted">No marks added yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

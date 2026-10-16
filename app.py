@@ -207,34 +207,24 @@ def dashboard():
         - Aaj ka Collection: Rs {today_collection}
         - Lifetime Net Profit: Rs {lifetime_profit}
         - Total Pending Fees: Rs {total_due}
-        
-"""
+        - Top Defaulters: {[f"{d['name']} (Rs {d['total_balance']})" for d in top_defaulters]}
+        """
+        try:
+            ai_insight = ai_model.generate_content(prompt).text
+        except Exception:
+            ai_insight = "AI Briefing abhi available nahi hai."
 
-try:
-    ai_insight = ai_model.generate_content(prompt).text
-except Exception:
-    ai_insight = "AI Briefing abhi available nahi hai."
+    return render_template("dashboard.html",
+        students=students_count, total_due=total_due,
+        today_collection=today_collection, lifetime_profit=lifetime_profit,
+        fee_status=fee_status, top_defaulters=top_defaulters,
+        class_strength=class_strength, performers_list=performers_list,
+        birthdays=birthdays, recent=recent_payments, recent_admissions=recent_admissions,
+        monthly_trend=monthly_trend, ai_insight=ai_insight,
+        monthly_target=monthly_target, progress_pct=progress_pct,
+        current_collection=current_collection)
 
-roll_no = request.args.get('roll_no', '') 
 
-return render_template('dashboard.html', 
-    roll_no=roll_no,
-    students=students_count, 
-    total_due=total_due,
-    today_collection=today_collection, 
-    lifetime_profit=lifetime_profit,
-    fee_status=fee_status, 
-    top_defaulters=top_defaulters,
-    class_strength=class_strength, 
-    performers_list=performers_list,
-    birthdays=birthdays, 
-    recent=recent_payments, 
-    recent_admissions=recent_admissions,
-    monthly_trend=monthly_trend, 
-    ai_insight=ai_insight,
-    monthly_target=monthly_target, 
-    progress_pct=progress_pct,
-    current_collection=current_collection)
 # ==================== ATTENDANCE ====================
 @app.route("/attendance", methods=["GET", "POST"])
 @login_required

@@ -61,7 +61,7 @@
             <div id="liveClock" class="fw-bold text-primary"></div>
             <button class="btn btn-outline-secondary btn-sm rounded-pill" onclick="toggleDarkMode()">🌙 Dark Mode</button>
             <a href="{{ url_for('students') }}" class="btn btn-primary btn-sm rounded-pill px-3">+ Add Student</a>
-            <a href="{{ url_for('collect') }}" class="btn btn-success btn-sm rounded-pill px-3">💰 Collect Fees</a>
+           <a href="{{ url_for('collect', roll_no=roll_no) }}" class="btn btn-success btn-sm rounded-pill px-3">💰 Collect Fees</a>
         </div>
     </div>
 

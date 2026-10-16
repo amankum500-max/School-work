@@ -1,85 +1,3125 @@
 {% extends "base.html" %}
+{% block title %}Fee Management — Ultra{% endblock %}
 {% block content %}
-<h2>💵 Fee Structure</h2>
 
-<div class="card">
-  <h3>➕ Set / Update Fee Structure</h3>
-  <form method="POST" action="{{ url_for('save_fees') }}">
-    <input name="roll_no" placeholder="Roll No" required>
-    <input name="tuition_fee" type="number" placeholder="Tuition Fee" oninput="calculateTotal()">
-    <input name="transport_fee" type="number" placeholder="Transport Fee" oninput="calculateTotal()">
-    <input name="hostel_fee" type="number" placeholder="Hostel Fee" oninput="calculateTotal()">
-    <input name="admission_fee" type="number" placeholder="Admission Fee" oninput="calculateTotal()">
-    <input name="dress_fee" type="number" placeholder="Dress Fee" oninput="calculateTotal()">
-    <input name="exam_fee" type="number" placeholder="Exam Fee" oninput="calculateTotal()">
-    <input name="book_fee" type="number" placeholder="Book Fee" oninput="calculateTotal()">
-    <input name="notebook_fee" type="number" placeholder="Notebook Fee" oninput="calculateTotal()">
-    <input name="misc_fee" type="number" placeholder="Misc Fee" oninput="calculateTotal()">
-    <input name="back_dues" type="number" placeholder="Back Dues (Purana Baaki)" oninput="calculateTotal()">
-    <input name="admission_paid" type="number" placeholder="Admission Paid (0/1)">
-    
-    <h3 style="color: #27ae60; margin: 10px 0;">Total: ₹<span id="totalAmount">0</span></h3>
-    <button class="green">💾 Save Fee Structure</button>
-  </form>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   ULTRA FEE MANAGEMENT — Complete Design System
+═══════════════════════════════════════════════════════════════════ */
+:root {
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --primary-light: #a5b4fc;
+  --primary-grad: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --primary-grad-2: linear-gradient(135deg, #6366f1, #a855f7, #ec4899);
+  --success: #10b981;
+  --success-grad: linear-gradient(135deg, #10b981, #059669);
+  --danger: #ef4444;
+  --danger-grad: linear-gradient(135deg, #ef4444, #dc2626);
+  --warning: #f59e0b;
+  --warning-grad: linear-gradient(135deg, #f59e0b, #d97706);
+  --info: #3b82f6;
+  --info-grad: linear-gradient(135deg, #3b82f6, #2563eb);
+  --purple: #8b5cf6;
+  --purple-grad: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  --pink: #ec4899;
+  --pink-grad: linear-gradient(135deg, #ec4899, #db2777);
+  --cyan: #06b6d4;
+  --cyan-grad: linear-gradient(135deg, #06b6d4, #0891b2);
+  --gold: #fbbf24;
+  --gold-grad: linear-gradient(135deg, #fbbf24, #f59e0b);
+  
+  --bg: #f8fafc;
+  --bg-2: #f1f5f9;
+  --card: #ffffff;
+  --card-hover: #fafbff;
+  --text: #0f172a;
+  --text-2: #334155;
+  --text-muted: #64748b;
+  --text-faint: #94a3b8;
+  --border: #e2e8f0;
+  --border-2: #cbd5e1;
+  
+  --shadow-xs: 0 1px 2px rgba(15,23,42,0.04);
+  --shadow-sm: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
+  --shadow: 0 4px 12px rgba(15,23,42,0.06), 0 2px 4px rgba(15,23,42,0.04);
+  --shadow-md: 0 8px 24px rgba(15,23,42,0.08), 0 4px 8px rgba(15,23,42,0.04);
+  --shadow-lg: 0 20px 40px rgba(15,23,42,0.1), 0 8px 16px rgba(15,23,42,0.06);
+  --shadow-xl: 0 32px 64px rgba(15,23,42,0.14), 0 16px 32px rgba(15,23,42,0.08);
+  --shadow-glow: 0 0 0 4px rgba(99,102,241,0.12);
+  
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  
+  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+body.dark-mode {
+  --bg: #0a0e1a;
+  --bg-2: #111827;
+  --card: #1a2032;
+  --card-hover: #212a42;
+  --text: #f1f5f9;
+  --text-2: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-faint: #64748b;
+  --border: #2d3748;
+  --border-2: #4a5568;
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+  --shadow: 0 4px 12px rgba(0,0,0,0.5);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.6);
+  --shadow-lg: 0 20px 40px rgba(0,0,0,0.7);
+  --shadow-xl: 0 32px 64px rgba(0,0,0,0.8);
+}
+
+.fu * { box-sizing: border-box; margin: 0; padding: 0; }
+.fu {
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'cv11', 'ss01';
+  letter-spacing: -0.011em;
+}
+
+.fu button { font-family: inherit; }
+.fu input, .fu select, .fu textarea { font-family: inherit; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════════════════════════════════════ */
+@keyframes fuSlideUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fuSlideDown { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fuSlideIn { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes fuSlideInR { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes fuFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fuScaleIn { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+@keyframes fuPop { 0% { transform: scale(0.85); } 60% { transform: scale(1.05); } 100% { transform: scale(1); } }
+@keyframes fuSpin { to { transform: rotate(360deg); } }
+@keyframes fuPulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.05); } }
+@keyframes fuFloat { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(30px, -30px); } }
+@keyframes fuShimmer { 0% { left: -100%; } 100% { left: 100%; } }
+@keyframes fuGradient { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+@keyframes fuRing { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+@keyframes fuBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes fuGlow { 0%, 100% { box-shadow: 0 0 20px rgba(99,102,241,0.3); } 50% { box-shadow: 0 0 40px rgba(99,102,241,0.6); } }
+@keyframes fuConfetti { 0% { transform: translateY(0) rotate(0); opacity: 1; } 100% { transform: translateY(-100px) rotate(360deg); opacity: 0; } }
+
+/* ═══════════════════════════════════════════════════════════════════
+   HERO HEADER
+═══════════════════════════════════════════════════════════════════ */
+.fu-hero {
+  position: relative;
+  background: var(--primary-grad-2);
+  background-size: 300% 300%;
+  animation: fuGradient 12s ease infinite;
+  color: white;
+  padding: 32px 40px;
+  border-radius: 24px;
+  margin-bottom: 24px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(102,126,234,0.4);
+}
+
+.fu-hero-blob {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(1px);
+}
+.fu-hero-blob.b1 {
+  top: -120px; right: -80px;
+  width: 340px; height: 340px;
+  background: radial-gradient(circle, rgba(255,255,255,0.18), transparent 65%);
+  animation: fuFloat 8s ease-in-out infinite;
+}
+.fu-hero-blob.b2 {
+  bottom: -140px; left: -60px;
+  width: 280px; height: 280px;
+  background: radial-gradient(circle, rgba(255,255,255,0.12), transparent 65%);
+  animation: fuFloat 11s ease-in-out infinite reverse;
+}
+.fu-hero-blob.b3 {
+  top: 30%; left: 40%;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(255,255,255,0.08), transparent 65%);
+  animation: fuFloat 14s ease-in-out infinite;
+}
+
+.fu-hero-inner {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.fu-hero-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.fu-hero-icon {
+  width: 68px; height: 68px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.22);
+  backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(255,255,255,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  animation: fuBounce 3s ease-in-out infinite;
+}
+.fu-hero h1 {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1.1;
+  margin: 0;
+}
+.fu-hero .fu-hero-sub {
+  font-size: 14px;
+  opacity: 0.92;
+  margin-top: 6px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.fu-hero .fu-hero-sub .badge-mini {
+  padding: 3px 9px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid rgba(255,255,255,0.25);
+}
+
+.fu-hero-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.fu-hero-btn {
+  padding: 11px 16px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(255,255,255,0.28);
+  background: rgba(255,255,255,0.16);
+  backdrop-filter: blur(12px);
+  color: white;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: var(--transition);
+  font-family: inherit;
+}
+.fu-hero-btn:hover {
+  background: rgba(255,255,255,0.3);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.2);
+}
+.fu-hero-btn.primary {
+  background: white;
+  color: #4f46e5;
+  border-color: white;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+.fu-hero-btn.primary:hover {
+  background: white;
+  color: #4338ca;
+  transform: translateY(-3px) scale(1.03);
+}
+
+/* Hero Stats */
+.fu-hero-stats {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-top: 28px;
+}
+.fu-hero-stat {
+  padding: 14px 16px;
+  background: rgba(255,255,255,0.14);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.fu-hero-stat:hover {
+  background: rgba(255,255,255,0.24);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.15);
+}
+.fu-hero-stat .fu-hs-label {
+  font-size: 10.5px;
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.fu-hero-stat .fu-hs-value {
+  font-size: 24px;
+  font-weight: 800;
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.8px;
+}
+.fu-hero-stat .fu-hs-sub {
+  font-size: 11px;
+  opacity: 0.85;
+  margin-top: 3px;
+  font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   VIEW TABS
+═══════════════════════════════════════════════════════════════════ */
+.fu-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  background: var(--card);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border: 1px solid var(--border);
+}
+.fu-tabs::-webkit-scrollbar { display: none; }
+
+.fu-tab {
+  flex: 1;
+  min-width: 130px;
+  padding: 12px 18px;
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--text-muted);
+  font-size: 13px;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.fu-tab:hover:not(.active) {
+  background: var(--bg-2);
+  color: var(--primary);
+  transform: translateY(-2px);
+}
+.fu-tab.active {
+  background: var(--primary-grad);
+  color: white;
+  box-shadow: 0 8px 20px rgba(102,126,234,0.4);
+  transform: translateY(-2px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CARDS
+═══════════════════════════════════════════════════════════════════ */
+.fu-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+}
+.fu-card:hover { box-shadow: var(--shadow-md); }
+
+.fu-card-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.fu-card-title h3 {
+  font-size: 16px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: -0.3px;
+}
+.fu-icon-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--primary-grad);
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  box-shadow: 0 4px 12px rgba(102,126,234,0.3);
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   KPI STATS
+═══════════════════════════════════════════════════════════════════ */
+.fu-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.fu-kpi {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: var(--transition-bounce);
+  overflow: hidden;
+}
+.fu-kpi::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: var(--primary-grad);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.5s;
+}
+.fu-kpi:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--primary);
+}
+.fu-kpi:hover::before { transform: scaleX(1); }
+
+.fu-kpi.success::before { background: var(--success-grad); }
+.fu-kpi.danger::before { background: var(--danger-grad); }
+.fu-kpi.warning::before { background: var(--warning-grad); }
+.fu-kpi.purple::before { background: var(--purple-grad); }
+.fu-kpi.pink::before { background: var(--pink-grad); }
+.fu-kpi.cyan::before { background: var(--cyan-grad); }
+.fu-kpi.gold::before { background: var(--gold-grad); }
+
+.fu-kpi-icon {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  background: var(--bg-2);
+  transition: var(--transition-bounce);
+}
+.fu-kpi:hover .fu-kpi-icon {
+  transform: scale(1.15) rotate(-8deg);
+}
+.fu-kpi.success .fu-kpi-icon { background: rgba(16,185,129,0.12); }
+.fu-kpi.danger .fu-kpi-icon { background: rgba(239,68,68,0.12); }
+.fu-kpi.warning .fu-kpi-icon { background: rgba(245,158,11,0.12); }
+.fu-kpi.purple .fu-kpi-icon { background: rgba(139,92,246,0.12); }
+.fu-kpi.pink .fu-kpi-icon { background: rgba(236,72,153,0.12); }
+.fu-kpi.cyan .fu-kpi-icon { background: rgba(6,182,212,0.12); }
+.fu-kpi.gold .fu-kpi-icon { background: rgba(251,191,36,0.12); }
+
+.fu-kpi-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 800;
+}
+.fu-kpi-value {
+  font-size: 26px;
+  font-weight: 800;
+  margin-top: 8px;
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  color: var(--text);
+}
+.fu-kpi-value.danger { color: var(--danger); }
+.fu-kpi-value.success { color: var(--success); }
+.fu-kpi-value.purple { color: var(--purple); }
+.fu-kpi-sub {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  font-weight: 600;
+}
+.fu-kpi-progress {
+  height: 6px;
+  background: var(--bg-2);
+  border-radius: 20px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+.fu-kpi-progress-fill {
+  height: 100%;
+  border-radius: 20px;
+  background: var(--primary-grad);
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.fu-kpi-progress-fill.success { background: var(--success-grad); }
+.fu-kpi-progress-fill.danger { background: var(--danger-grad); }
+.fu-kpi-progress-fill.warning { background: var(--warning-grad); }
+.fu-kpi-progress-fill.pink { background: var(--pink-grad); }
+.fu-kpi-progress-fill.cyan { background: var(--cyan-grad); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   TOOLBAR & FILTERS
+═══════════════════════════════════════════════════════════════════ */
+.fu-toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  align-items: center;
+}
+.fu-search {
+  flex: 1;
+  min-width: 260px;
+  position: relative;
+}
+.fu-search input {
+  width: 100%;
+  padding: 12px 16px 12px 44px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  font-size: 14px;
+  background: var(--card);
+  color: var(--text);
+  transition: var(--transition);
+  outline: none;
+}
+.fu-search input:focus {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-glow);
+}
+.fu-search .fu-search-icon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 15px;
+  color: var(--text-faint);
+  pointer-events: none;
+}
+.fu-search .fu-search-kbd {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 3px;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.fu-select {
+  padding: 12px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  font-size: 13.5px;
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 600;
+  outline: none;
+  transition: var(--transition);
+  font-family: inherit;
+}
+.fu-select:focus {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-glow);
+}
+
+.fu-btn {
+  padding: 11px 18px;
+  border-radius: 12px;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 13px;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  text-decoration: none;
+  color: white;
+  white-space: nowrap;
+  font-family: inherit;
+  letter-spacing: -0.1px;
+}
+.fu-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+.fu-btn:active { transform: translateY(0); }
+.fu-btn.primary { background: var(--primary-grad); }
+.fu-btn.success { background: var(--success-grad); }
+.fu-btn.danger { background: var(--danger-grad); }
+.fu-btn.warning { background: var(--warning-grad); }
+.fu-btn.info { background: var(--info-grad); }
+.fu-btn.purple { background: var(--purple-grad); }
+.fu-btn.pink { background: var(--pink-grad); }
+.fu-btn.cyan { background: var(--cyan-grad); }
+.fu-btn.gold { background: var(--gold-grad); color: #78350f; }
+.fu-btn.sm { padding: 8px 14px; font-size: 12px; border-radius: 9px; }
+.fu-btn.outline {
+  background: transparent;
+  border: 1.5px solid var(--border);
+  color: var(--text-2);
+}
+.fu-btn.outline:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(99,102,241,0.06);
+}
+
+/* Filter Chips */
+.fu-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed var(--border);
+}
+.fu-chip {
+  padding: 7px 14px;
+  border-radius: 24px;
+  background: var(--bg-2);
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+.fu-chip:hover {
+  background: var(--card);
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-2px);
+}
+.fu-chip.active {
+  background: var(--primary-grad);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(102,126,234,0.35);
+}
+.fu-chip .fu-chip-count {
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.1);
+  font-size: 10.5px;
+  font-weight: 800;
+}
+.fu-chip.active .fu-chip-count {
+  background: rgba(255,255,255,0.25);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   VIEW MODE SWITCHER
+═══════════════════════════════════════════════════════════════════ */
+.fu-view-switch {
+  display: inline-flex;
+  padding: 3px;
+  background: var(--bg-2);
+  border-radius: 10px;
+  gap: 2px;
+}
+.fu-view-btn {
+  padding: 7px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.fu-view-btn.active {
+  background: var(--card);
+  color: var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TABLE
+═══════════════════════════════════════════════════════════════════ */
+.fu-table-wrap {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.fu-table-scroll { overflow-x: auto; }
+
+table.fu-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13.5px;
+  min-width: 1050px;
+}
+table.fu-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--bg-2);
+}
+table.fu-table th {
+  padding: 15px 14px;
+  text-align: left;
+  font-weight: 800;
+  color: var(--text-2);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
+  border-bottom: 1.5px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  position: relative;
+  transition: var(--transition);
+}
+table.fu-table th:hover {
+  background: rgba(99,102,241,0.06);
+  color: var(--primary);
+}
+table.fu-table th .fu-sort-icon {
+  display: inline-block;
+  margin-left: 6px;
+  opacity: 0.3;
+  font-size: 10px;
+  transition: var(--transition);
+}
+table.fu-table th.sorted .fu-sort-icon {
+  opacity: 1;
+  color: var(--primary);
+}
+table.fu-table th.no-sort { cursor: default; }
+table.fu-table th.no-sort .fu-sort-icon { display: none; }
+table.fu-table th.no-sort:hover { background: transparent; color: var(--text-2); }
+
+table.fu-table td {
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  transition: var(--transition);
+}
+table.fu-table tbody tr {
+  transition: var(--transition);
+  cursor: pointer;
+}
+table.fu-table tbody tr:hover {
+  background: var(--card-hover);
+}
+table.fu-table tbody tr.selected {
+  background: rgba(99,102,241,0.08);
+}
+table.fu-table tbody tr:last-child td { border-bottom: none; }
+
+/* Student cell */
+.fu-student {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.fu-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 14px;
+  color: white;
+  background: var(--primary-grad);
+  box-shadow: 0 4px 10px rgba(102,126,234,0.3);
+  flex-shrink: 0;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  letter-spacing: -0.5px;
+}
+.fu-student-info { min-width: 0; }
+.fu-student-name {
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fu-student-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+/* Roll badge */
+.fu-roll {
+  display: inline-flex;
+  padding: 4px 11px;
+  background: rgba(99,102,241,0.1);
+  color: var(--primary);
+  border: 1px solid rgba(99,102,241,0.2);
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 11.5px;
+  font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+  letter-spacing: 0.3px;
+}
+
+/* Amounts */
+.fu-amt {
+  font-weight: 800;
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+  font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+  letter-spacing: -0.3px;
+}
+.fu-amt.danger { color: var(--danger); }
+.fu-amt.success { color: var(--success); }
+.fu-amt.muted { color: var(--text-muted); font-weight: 600; }
+
+/* Status pill */
+.fu-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 24px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+.fu-status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+}
+.fu-status.clear { background: #d1fae5; color: #065f46; }
+.fu-status.pending { background: #fef3c7; color: #92400e; }
+.fu-status.high { background: #fee2e2; color: #991b1b; }
+body.dark-mode .fu-status.clear { background: rgba(16,185,129,0.2); color: #6ee7b7; }
+body.dark-mode .fu-status.pending { background: rgba(245,158,11,0.2); color: #fcd34d; }
+body.dark-mode .fu-status.high { background: rgba(239,68,68,0.2); color: #fca5a5; }
+
+/* Risk */
+.fu-risk {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: var(--bg-2);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.fu-risk-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.fu-risk-dot.high {
+  background: var(--danger);
+  box-shadow: 0 0 8px var(--danger);
+  animation: fuPulse 1.5s infinite;
+}
+.fu-risk-dot.medium { background: var(--warning); }
+.fu-risk-dot.low { background: var(--success); }
+
+/* Action buttons */
+.fu-actions {
+  display: flex;
+  gap: 4px;
+}
+.fu-action {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  text-decoration: none;
+  transition: var(--transition-bounce);
+  background: var(--bg-2);
+  color: var(--text-2);
+}
+.fu-action:hover {
+  transform: translateY(-3px) scale(1.1);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+.fu-action.edit { background: #fef3c7; color: #92400e; }
+.fu-action.receipt { background: #dbeafe; color: #1e40af; }
+.fu-action.collect { background: #ede9fe; color: #5b21b6; }
+.fu-action.whatsapp { background: #dcfce7; color: #166534; }
+.fu-action.delete { background: #fee2e2; color: #991b1b; }
+body.dark-mode .fu-action.edit { background: rgba(245,158,11,0.2); color: #fcd34d; }
+body.dark-mode .fu-action.receipt { background: rgba(59,130,246,0.2); color: #93c5fd; }
+body.dark-mode .fu-action.collect { background: rgba(139,92,246,0.2); color: #c4b5fd; }
+body.dark-mode .fu-action.whatsapp { background: rgba(16,185,129,0.2); color: #6ee7b7; }
+body.dark-mode .fu-action.delete { background: rgba(239,68,68,0.2); color: #fca5a5; }
+
+/* Checkbox */
+.fu-check {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 2px solid var(--border-2);
+  cursor: pointer;
+  accent-color: var(--primary);
+  transition: var(--transition);
+}
+.fu-check:checked { transform: scale(1.1); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   CARD VIEW
+═══════════════════════════════════════════════════════════════════ */
+.fu-card-view {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  padding: 20px;
+}
+.fu-student-card {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  transition: var(--transition-bounce);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.fu-student-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+.fu-student-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--primary-grad);
+}
+.fu-student-card.clear::before { background: var(--success-grad); }
+.fu-student-card.pending::before { background: var(--warning-grad); }
+.fu-student-card.high::before { background: var(--danger-grad); }
+
+.fu-sc-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.fu-sc-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  background: var(--primary-grad);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 800;
+  box-shadow: 0 8px 20px rgba(102,126,234,0.3);
+}
+.fu-sc-name {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+.fu-sc-meta {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  display: flex;
+  gap: 8px;
+}
+.fu-sc-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+.fu-sc-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12.5px;
+}
+.fu-sc-row .lbl { color: var(--text-muted); font-weight: 600; }
+.fu-sc-row .val { font-weight: 800; font-variant-numeric: tabular-nums; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   COMPACT VIEW
+═══════════════════════════════════════════════════════════════════ */
+.fu-compact-view {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fu-compact-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.fu-compact-row:hover {
+  background: var(--bg-2);
+}
+.fu-compact-row .fu-roll { min-width: 60px; }
+.fu-compact-row .fu-c-name {
+  flex: 1;
+  font-weight: 700;
+  font-size: 13px;
+}
+.fu-compact-row .fu-c-class {
+  font-size: 12px;
+  color: var(--text-muted);
+  min-width: 60px;
+}
+.fu-compact-row .fu-c-amt {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  font-family: 'SF Mono', monospace;
+  font-size: 13px;
+  min-width: 90px;
+  text-align: right;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   BULK BAR
+═══════════════════════════════════════════════════════════════════ */
+.fu-bulkbar {
+  position: sticky;
+  top: 12px;
+  z-index: 100;
+  background: linear-gradient(135deg, #1e293b, #334155);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 14px;
+  margin-bottom: 12px;
+  display: none;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.25);
+  animation: fuSlideDown 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+.fu-bulkbar.show { display: flex; }
+.fu-bulk-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+  font-size: 14px;
+}
+.fu-bulk-badge {
+  padding: 4px 12px;
+  background: var(--primary);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: 0 4px 12px rgba(99,102,241,0.4);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FORM
+═══════════════════════════════════════════════════════════════════ */
+.fu-form-section {
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 14px;
+  transition: var(--transition);
+}
+.fu-form-section:hover { border-color: var(--primary-light); }
+.fu-form-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 14px;
+}
+.fu-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+}
+.fu-input-wrap {
+  position: relative;
+}
+.fu-input-wrap .fu-currency {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-faint);
+  font-weight: 800;
+  font-size: 15px;
+  pointer-events: none;
+  z-index: 1;
+}
+.fu-input-wrap input,
+.fu-form-grid input,
+.fu-form-grid select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 11px;
+  font-size: 14px;
+  background: var(--card);
+  color: var(--text);
+  outline: none;
+  transition: var(--transition);
+}
+.fu-input-wrap input { padding-left: 32px; }
+.fu-input-wrap input:focus,
+.fu-form-grid input:focus {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-glow);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TOTAL BAR
+═══════════════════════════════════════════════════════════════════ */
+.fu-total {
+  background: var(--success-grad);
+  background-size: 200% 200%;
+  animation: fuGradient 4s ease infinite;
+  color: white;
+  padding: 22px 28px;
+  border-radius: 16px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  box-shadow: 0 20px 48px rgba(16,185,129,0.35);
+  position: relative;
+  overflow: hidden;
+}
+.fu-total::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+  animation: fuShimmer 3s infinite;
+}
+.fu-total-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  font-weight: 800;
+  opacity: 0.92;
+  position: relative;
+}
+.fu-total-amount {
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: -1.5px;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  position: relative;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CHARTS
+═══════════════════════════════════════════════════════════════════ */
+.fu-chart-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+@media (max-width: 900px) {
+  .fu-chart-grid { grid-template-columns: 1fr; }
+}
+.fu-chart-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  box-shadow: var(--shadow);
+}
+.fu-chart-title {
+  font-size: 14px;
+  font-weight: 800;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: -0.3px;
+}
+.fu-chart-container {
+  height: 280px;
+  position: relative;
+}
+
+/* Top defaulters list */
+.fu-def-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fu-def-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  background: var(--bg);
+  transition: var(--transition);
+  cursor: pointer;
+}
+.fu-def-item:hover {
+  background: var(--card);
+  box-shadow: var(--shadow);
+  transform: translateX(5px);
+}
+.fu-def-rank {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--primary-grad);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.fu-def-rank.gold { background: var(--gold-grad); color: #78350f; }
+.fu-def-rank.silver { background: linear-gradient(135deg, #cbd5e1, #94a3b8); }
+.fu-def-rank.bronze { background: linear-gradient(135deg, #d97706, #92400e); }
+.fu-def-info { flex: 1; min-width: 0; }
+.fu-def-name {
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fu-def-meta {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+.fu-def-amt {
+  font-weight: 800;
+  color: var(--danger);
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MODAL
+═══════════════════════════════════════════════════════════════════ */
+.fu-modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,0.7);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fuFadeIn 0.25s;
+}
+.fu-modal-bg.show { display: flex; }
+
+.fu-modal {
+  background: var(--card);
+  border-radius: 20px;
+  max-width: 720px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-xl);
+  animation: fuModalIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  color: var(--text);
+}
+@keyframes fuModalIn {
+  from { opacity: 0; transform: scale(0.92) translateY(30px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.fu-modal-header {
+  padding: 22px 26px;
+  background: var(--primary-grad);
+  color: white;
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.fu-modal-header h3 {
+  font-size: 17px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: -0.3px;
+}
+.fu-modal-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+.fu-modal-close:hover {
+  background: rgba(255,255,255,0.35);
+  transform: rotate(90deg);
+}
+.fu-modal-body { padding: 26px; }
+.fu-modal-footer {
+  padding: 16px 26px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Info mini grid */
+.fu-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.fu-info-mini {
+  padding: 14px 16px;
+  background: var(--bg);
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+}
+.fu-info-mini .fu-im-lbl {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 800;
+}
+.fu-info-mini .fu-im-val {
+  font-size: 15px;
+  font-weight: 800;
+  margin-top: 5px;
+  letter-spacing: -0.3px;
+}
+
+/* Detail rows */
+.fu-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 0;
+  border-bottom: 1px dashed var(--border);
+  font-size: 14px;
+}
+.fu-detail-row:last-child { border-bottom: none; }
+.fu-detail-row .lbl {
+  color: var(--text-muted);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.fu-detail-row .val {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.3px;
+}
+.fu-detail-row.total {
+  background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.12));
+  margin-top: 12px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: none;
+  color: var(--success);
+  font-size: 17px;
+  font-weight: 900;
+}
+.fu-detail-row.dues .val { color: var(--danger); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════════════════════ */
+.fu-toast-stack {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+.fu-toast {
+  background: var(--card);
+  color: var(--text);
+  padding: 14px 20px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 290px;
+  font-size: 13.5px;
+  font-weight: 600;
+  border-left: 4px solid var(--primary);
+  animation: fuToastIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: auto;
+}
+@keyframes fuToastIn {
+  from { opacity: 0; transform: translateX(100%) scale(0.9); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+.fu-toast.success { border-left-color: var(--success); }
+.fu-toast.error { border-left-color: var(--danger); }
+.fu-toast.warning { border-left-color: var(--warning); }
+.fu-toast.info { border-left-color: var(--info); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   EMPTY STATE
+═══════════════════════════════════════════════════════════════════ */
+.fu-empty {
+  text-align: center;
+  padding: 60px 30px;
+}
+.fu-empty-icon {
+  font-size: 72px;
+  opacity: 0.35;
+  margin-bottom: 18px;
+  animation: fuBounce 3s ease-in-out infinite;
+}
+.fu-empty h3 {
+  font-size: 18px;
+  margin-bottom: 8px;
+  color: var(--text);
+  font-weight: 800;
+}
+.fu-empty p {
+  color: var(--text-muted);
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FAB
+═══════════════════════════════════════════════════════════════════ */
+.fu-fab {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-end;
+}
+.fu-fab-main {
+  width: 60px;
+  height: 60px;
+  border-radius: 20px;
+  background: var(--primary-grad);
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 16px 40px rgba(102,126,234,0.5), 0 0 0 0 rgba(102,126,234,0.7);
+  transition: var(--transition-bounce);
+  animation: fuGlow 2.5s infinite;
+}
+.fu-fab-main:hover {
+  transform: rotate(135deg) scale(1.1);
+}
+.fu-fab-item {
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  background: var(--card);
+  color: var(--text);
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  font-size: 19px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  transform: translateY(20px) scale(0.7);
+  pointer-events: none;
+  transition: var(--transition-bounce);
+  position: relative;
+}
+.fu-fab.open .fu-fab-item {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+.fu-fab.open .fu-fab-item:nth-child(1) { transition-delay: 0.18s; }
+.fu-fab.open .fu-fab-item:nth-child(2) { transition-delay: 0.12s; }
+.fu-fab.open .fu-fab-item:nth-child(3) { transition-delay: 0.06s; }
+.fu-fab-item:hover {
+  transform: scale(1.15) !important;
+  background: var(--primary-grad);
+  color: white;
+  border-color: transparent;
+}
+.fu-fab-item::after {
+  content: attr(data-tip);
+  position: absolute;
+  right: 60px;
+  top: 50%;
+  transform: translateY(-50%) translateX(10px);
+  background: var(--text);
+  color: var(--card);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: var(--transition);
+}
+.fu-fab-item:hover::after {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   COMMAND PALETTE
+═══════════════════════════════════════════════════════════════════ */
+.fu-cmd-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,0.7);
+  backdrop-filter: blur(10px);
+  z-index: 99999;
+  display: none;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 100px 20px 20px;
+  animation: fuFadeIn 0.2s;
+}
+.fu-cmd-bg.show { display: flex; }
+.fu-cmd {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  max-width: 580px;
+  width: 100%;
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+  animation: fuScaleIn 0.25s;
+  color: var(--text);
+}
+.fu-cmd-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.fu-cmd-input-wrap input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  color: var(--text);
+  font-weight: 500;
+}
+.fu-cmd-input-wrap input::placeholder {
+  color: var(--text-faint);
+}
+.fu-cmd-list {
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 8px;
+}
+.fu-cmd-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 13.5px;
+}
+.fu-cmd-item:hover,
+.fu-cmd-item.active {
+  background: var(--bg-2);
+}
+.fu-cmd-item .fu-cmd-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--primary-grad);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.fu-cmd-item .fu-cmd-label {
+  flex: 1;
+  font-weight: 600;
+}
+.fu-cmd-item .fu-cmd-cat {
+  font-size: 10px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 800;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .fu-hero { padding: 22px 20px; border-radius: 18px; }
+  .fu-hero h1 { font-size: 22px; }
+  .fu-hero-icon { width: 52px; height: 52px; font-size: 26px; }
+  .fu-kpi-value { font-size: 22px; }
+  .fu-total-amount { font-size: 26px; }
+  .fu-fab { bottom: 18px; right: 18px; }
+  .fu-fab-main { width: 54px; height: 54px; font-size: 22px; }
+  .fu-info-grid { grid-template-columns: 1fr; }
+  .fu-hero-stats { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .fu-hero-stat .fu-hs-value { font-size: 20px; }
+}
+
+@media print {
+  .no-print, .fu-fab, .fu-tabs, .fu-hero-actions, .fu-bulkbar, .fu-toolbar, .fu-chips { display: none !important; }
+  .fu-hero { color: black !important; background: white !important; border: 2px solid #333; }
+  .fu-card, .fu-kpi, .fu-table-wrap { box-shadow: none !important; border: 1px solid #ddd !important; }
+  body { background: white !important; }
+}
+
+.fu-hidden-col { display: none !important; }
+
+/* Toggle switch */
+.fu-switch {
+  position: relative;
+  display: inline-block;
+  width: 42px;
+  height: 24px;
+  cursor: pointer;
+}
+.fu-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.fu-switch-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--border-2);
+  border-radius: 24px;
+  transition: var(--transition);
+}
+.fu-switch-slider::before {
+  content: '';
+  position: absolute;
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: var(--transition);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+.fu-switch input:checked + .fu-switch-slider {
+  background: var(--primary);
+}
+.fu-switch input:checked + .fu-switch-slider::before {
+  transform: translateX(18px);
+}
+</style>
+
+<div class="fu">
+
+<!-- ═══ TOAST STACK ═══ -->
+<div class="fu-toast-stack" id="toastStack"></div>
+
+<!-- ═══ HERO HEADER ═══ -->
+<div class="fu-hero">
+  <div class="fu-hero-blob b1"></div>
+  <div class="fu-hero-blob b2"></div>
+  <div class="fu-hero-blob b3"></div>
+
+  <div class="fu-hero-inner">
+    <div class="fu-hero-title-wrap">
+      <div class="fu-hero-icon">💎</div>
+      <div>
+        <h1>Fee Management</h1>
+        <div class="fu-hero-sub">
+          <span>Complete fee · arrears · collection tracking</span>
+          <span class="badge-mini">v4.0 Ultra</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="fu-hero-actions no-print">
+      <button class="fu-hero-btn primary" onclick="switchTab('add', document.querySelectorAll('.fu-tab')[1])">
+        ➕ New Fee
+      </button>
+      <button class="fu-hero-btn" onclick="openCmd()" title="Command Palette (Ctrl+K)">⌘</button>
+      <button class="fu-hero-btn" onclick="toggleDarkMode()" id="darkToggle" title="Theme">🌙</button>
+      <button class="fu-hero-btn" onclick="window.print()" title="Print">🖨️</button>
+      <button class="fu-hero-btn" onclick="exportCSV()" title="Export CSV">📥</button>
+      <button class="fu-hero-btn" onclick="openModal('colModal')" title="Columns">👁️</button>
+    </div>
+  </div>
+
+  <div class="fu-hero-stats">
+    <div class="fu-hero-stat" onclick="quickFilter('all')">
+      <div class="fu-hs-label">👥 Students</div>
+      <div class="fu-hs-value" id="hsStudents">{{ fees|length }}</div>
+      <div class="fu-hs-sub">Active records</div>
+    </div>
+    <div class="fu-hero-stat" onclick="quickFilter('all')">
+      <div class="fu-hs-label">💰 Base Fee</div>
+      <div class="fu-hs-value" id="hsFee">₹0</div>
+      <div class="fu-hs-sub">Monthly total</div>
+    </div>
+    <div class="fu-hero-stat" onclick="quickFilter('dues')">
+      <div class="fu-hs-label">📉 Outstanding</div>
+      <div class="fu-hs-value" id="hsDues">₹0</div>
+      <div class="fu-hs-sub">Pending dues</div>
+    </div>
+    <div class="fu-hero-stat" onclick="quickFilter('high')">
+      <div class="fu-hs-label">⚡ High Risk</div>
+      <div class="fu-hs-value" id="hsHigh">0</div>
+      <div class="fu-hs-sub">Above ₹5K</div>
+    </div>
+    <div class="fu-hero-stat">
+      <div class="fu-hs-label">✅ Collection</div>
+      <div class="fu-hs-value" id="hsRate">0%</div>
+      <div class="fu-hs-sub">Recovery rate</div>
+    </div>
+  </div>
 </div>
 
-<div class="card">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-    <h3>📋 Fee Structures</h3>
-    {% if session.role == 'admin' %}
-    <a href="{{ url_for('run_arrears_update') }}" class="btn" style="background:#8e44ad; font-size: 13px;" onclick="return confirm('Pichle mahine ka Back Dues update karna hai?');">⚙️ Run Monthly Arrears</a>
-    {% endif %}
+<!-- ═══ TABS ═══ -->
+<div class="fu-tabs no-print">
+  <button class="fu-tab active" onclick="switchTab('list', this)">📋 Fee List</button>
+  <button class="fu-tab" onclick="switchTab('add', this)">➕ Add / Update</button>
+  <button class="fu-tab" onclick="switchTab('analytics', this)">📊 Analytics</button>
+  <button class="fu-tab" onclick="switchTab('tools', this)">🛠️ Tools</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     TAB 1: FEE LIST
+═══════════════════════════════════════════════════════════════════ -->
+<div id="tab-list" class="fu-tab-content" style="display:block;">
+
+  <!-- KPI Cards -->
+  <div class="fu-kpis">
+    <div class="fu-kpi success">
+      <div class="fu-kpi-icon">💰</div>
+      <div class="fu-kpi-label">Total Base Fee</div>
+      <div class="fu-kpi-value" id="kpiFee">₹0</div>
+      <div class="fu-kpi-sub" id="kpiFeeCount">0 records</div>
+      <div class="fu-kpi-progress"><div class="fu-kpi-progress-fill success" style="width:100%"></div></div>
+    </div>
+    <div class="fu-kpi danger">
+      <div class="fu-kpi-icon">📉</div>
+      <div class="fu-kpi-label">Outstanding Dues</div>
+      <div class="fu-kpi-value danger" id="kpiDues">₹0</div>
+      <div class="fu-kpi-sub" id="kpiDuesCount">0 students</div>
+      <div class="fu-kpi-progress"><div class="fu-kpi-progress-fill danger" id="kpiDuesBar" style="width:0%"></div></div>
+    </div>
+    <div class="fu-kpi purple">
+      <div class="fu-kpi-icon">💎</div>
+      <div class="fu-kpi-label">Grand Total</div>
+      <div class="fu-kpi-value purple" id="kpiGrand">₹0</div>
+      <div class="fu-kpi-sub">Combined value</div>
+      <div class="fu-kpi-progress"><div class="fu-kpi-progress-fill" style="width:100%"></div></div>
+    </div>
+    <div class="fu-kpi warning">
+      <div class="fu-kpi-icon">⚡</div>
+      <div class="fu-kpi-label">High Risk</div>
+      <div class="fu-kpi-value" id="kpiHigh">0</div>
+      <div class="fu-kpi-sub">Above ₹5,000</div>
+      <div class="fu-kpi-progress"><div class="fu-kpi-progress-fill warning" id="kpiHighBar" style="width:0%"></div></div>
+    </div>
+    <div class="fu-kpi cyan">
+      <div class="fu-kpi-icon">📈</div>
+      <div class="fu-kpi-label">Collection Rate</div>
+      <div class="fu-kpi-value" id="kpiRate">0%</div>
+      <div class="fu-kpi-sub">Recovery percentage</div>
+      <div class="fu-kpi-progress"><div class="fu-kpi-progress-fill cyan" id="kpiRateBar" style="width:0%"></div></div>
+    </div>
   </div>
-  
-  <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="🔍 Search by Roll No or Name...">
-  
-  <div style="overflow-x: auto;">
-    <table id="feesTable">
-      <tr>
-        <th>Roll</th><th>Name</th><th>Class</th><th>Tuition</th><th>Back Dues</th><th>Total</th><th>Actions</th>
-      </tr>
-      {% for f in fees %}
-      <tr>
-        <td>{{ f['roll_no'] }}</td>
-        <td>{{ f['name'] }}</td>
-        <td>{{ f['class_name'] }}-{{ f['section'] }}</td>
-        <td>₹{{ '{:,.0f}'.format(f['tuition_fee'] or 0) }}</td>
-        <td style="color: #e74c3c; font-weight: bold;">₹{{ '{:,.0f}'.format(f['back_dues'] or 0) }}</td>
-        <td><strong>₹{{ '{:,.0f}'.format((f['tuition_fee'] or 0) + (f['transport_fee'] or 0) + (f['hostel_fee'] or 0) + (f['admission_fee'] or 0) + (f['dress_fee'] or 0) + (f['exam_fee'] or 0) + (f['book_fee'] or 0) + (f['notebook_fee'] or 0) + (f['misc_fee'] or 0) + (f['back_dues'] or 0)) }}</strong></td>
-        <td>
-          <a href="{{ url_for('edit_fees', roll_no=f['roll_no']) }}" class="btn" style="background:#f39c12; padding: 5px 10px; font-size: 12px;">✏️</a>
-          <a href="{{ url_for('delete_fees', roll_no=f['roll_no']) }}" class="btn" style="background:#e74c3c; padding: 5px 10px; font-size: 12px;" onclick="return confirm('Delete karna hai?');">🗑️</a>
-          <a href="{{ url_for('receipt', roll_no=f['roll_no']) }}" target="_blank" class="btn" style="background:#3498db; padding: 5px 10px; font-size: 12px;">🧾</a>
-        </td>
-      </tr>
-      {% endfor %}
-    </table>
+
+  <div class="fu-card">
+
+    <!-- Filter Chips -->
+    <div class="fu-chips no-print">
+      <span class="fu-chip active" data-chip="all" onclick="chipFilter('all', this)">
+        📋 All <span class="fu-chip-count" id="chipAll">{{ fees|length }}</span>
+      </span>
+      <span class="fu-chip" data-chip="dues" onclick="chipFilter('dues', this)">
+        💰 Has Dues <span class="fu-chip-count" id="chipDues">0</span>
+      </span>
+      <span class="fu-chip" data-chip="clear" onclick="chipFilter('clear', this)">
+        ✅ Clear <span class="fu-chip-count" id="chipClear">0</span>
+      </span>
+      <span class="fu-chip" data-chip="high" onclick="chipFilter('high', this)">
+        🚨 High Dues <span class="fu-chip-count" id="chipHigh">0</span>
+      </span>
+      <span class="fu-chip" data-chip="risk" onclick="chipFilter('risk', this)">
+        🎯 Critical Risk <span class="fu-chip-count" id="chipRisk">0</span>
+      </span>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="fu-toolbar no-print">
+      <div class="fu-search">
+        <span class="fu-search-icon">🔍</span>
+        <input type="text" id="searchInput" oninput="debounceSearch()" placeholder="Search by roll, name, class...">
+        <span class="fu-search-kbd">
+          <span style="padding:2px 6px;background:var(--bg-2);border-radius:4px;font-size:10px;font-weight:700;">⌘K</span>
+        </span>
+      </div>
+      <select class="fu-select" id="classFilter" onchange="applyFilters()">
+        <option value="">🏫 All Classes</option>
+      </select>
+      <select class="fu-select" id="duesFilter" onchange="applyFilters()">
+        <option value="">📊 All Status</option>
+        <option value="dues">Has Dues</option>
+        <option value="clear">Clear</option>
+        <option value="high">High (&gt;₹5K)</option>
+        <option value="risk">Critical Risk</option>
+      </select>
+      <select class="fu-select" id="rowLimit" onchange="applyFilters()">
+        <option value="all">Show All</option>
+        <option value="10">Top 10</option>
+        <option value="25">Top 25</option>
+        <option value="50">Top 50</option>
+      </select>
+
+      <div class="fu-view-switch">
+        <button class="fu-view-btn active" onclick="setView('table', this)" title="Table view">▦</button>
+        <button class="fu-view-btn" onclick="setView('card', this)" title="Card view">▢</button>
+        <button class="fu-view-btn" onclick="setView('compact', this)" title="Compact view">☰</button>
+      </div>
+
+      <button class="fu-btn outline" onclick="resetFilters()">🔄 Reset</button>
+    </div>
+
+    <!-- Bulk bar -->
+    <div class="fu-bulkbar no-print" id="bulkBar">
+      <div class="fu-bulk-info">
+        <span class="fu-bulk-badge" id="selCount">0</span>
+        <span>selected</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="fu-btn warning sm" onclick="bulkExport()">📥 Export</button>
+        <button class="fu-btn pink sm" onclick="bulkWhatsApp()">💬 WhatsApp</button>
+        <button class="fu-btn danger sm" onclick="bulkDelete()">🗑️ Delete</button>
+      </div>
+    </div>
+
+    <!-- TABLE VIEW -->
+    <div id="tableView" class="fu-table-wrap">
+      <div class="fu-table-scroll">
+        <table class="fu-table" id="feesTable">
+          <thead>
+            <tr>
+              <th class="no-sort" data-col="check" style="width:40px;">
+                <input type="checkbox" class="fu-check" id="selectAll" onchange="toggleSelectAll()">
+              </th>
+              <th data-col="roll" onclick="sortTable(1)">Roll <span class="fu-sort-icon">↕</span></th>
+              <th data-col="name" onclick="sortTable(2)">Student <span class="fu-sort-icon">↕</span></th>
+              <th data-col="class" onclick="sortTable(3)">Class <span class="fu-sort-icon">↕</span></th>
+              <th data-col="tuition" onclick="sortTable(4)">Tuition <span class="fu-sort-icon">↕</span></th>
+              <th data-col="dues" onclick="sortTable(5)">Back Dues <span class="fu-sort-icon">↕</span></th>
+              <th data-col="total" onclick="sortTable(6)">Total <span class="fu-sort-icon">↕</span></th>
+              <th data-col="status" class="no-sort">Status</th>
+              <th class="no-print no-sort" data-col="actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            {% for f in fees %}
+            {% set total = (f.tuition_fee or 0) + (f.transport_fee or 0) + (f.hostel_fee or 0) + (f.admission_fee or 0) + (f.dress_fee or 0) + (f.exam_fee or 0) + (f.book_fee or 0) + (f.notebook_fee or 0) + (f.misc_fee or 0) + (f.back_dues or 0) %}
+            {% set base = (f.tuition_fee or 0) + (f.transport_fee or 0) + (f.hostel_fee or 0) + (f.admission_fee or 0) + (f.dress_fee or 0) + (f.exam_fee or 0) + (f.book_fee or 0) + (f.notebook_fee or 0) + (f.misc_fee or 0) %}
+            {% set dues = f.back_dues or 0 %}
+            {% set risk = (dues / base * 100)|round|int if base > 0 else 0 %}
+            {% if dues == 0 %}{% set status_class = 'clear' %}{% set status_text = 'Clear' %}
+            {% elif dues < 5000 %}{% set status_class = 'pending' %}{% set status_text = 'Pending' %}
+            {% else %}{% set status_class = 'high' %}{% set status_text = 'High Dues' %}{% endif %}
+            {% set risk_class = 'high' if risk >= 70 else ('medium' if risk >= 30 else 'low') %}
+            <tr data-roll="{{ f.roll_no }}" data-name="{{ f.name }}"
+                data-class="{{ f.class_name }}-{{ f.section or '' }}"
+                data-dues="{{ dues }}" data-total="{{ total }}" data-base="{{ base }}"
+                data-risk="{{ risk }}" data-status="{{ status_class }}"
+                data-phone="{{ f.parent_phone or '' }}"
+                data-tuition="{{ f.tuition_fee or 0 }}" data-transport="{{ f.transport_fee or 0 }}"
+                data-hostel="{{ f.hostel_fee or 0 }}" data-admission="{{ f.admission_fee or 0 }}"
+                data-dress="{{ f.dress_fee or 0 }}" data-exam="{{ f.exam_fee or 0 }}"
+                data-book="{{ f.book_fee or 0 }}" data-notebook="{{ f.notebook_fee or 0 }}"
+                data-misc="{{ f.misc_fee or 0 }}"
+                onclick="openDetail('{{ f.roll_no }}')">
+              <td class="no-print" onclick="event.stopPropagation()">
+                <input type="checkbox" class="fu-check row-check" value="{{ f.roll_no }}" onchange="updateBulk(this)">
+              </td>
+              <td><span class="fu-roll">{{ f.roll_no }}</span></td>
+              <td>
+                <div class="fu-student">
+                  <div class="fu-avatar">{{ (f.name or '?')[0]|upper }}</div>
+                  <div class="fu-student-info">
+                    <div class="fu-student-name">{{ f.name }}</div>
+                    {% if f.parent_phone %}<div class="fu-student-meta">📱 {{ f.parent_phone }}</div>{% endif %}
+                  </div>
+                </div>
+              </td>
+              <td><strong>{{ f.class_name }}{% if f.section %}-{{ f.section }}{% endif %}</strong></td>
+              <td><span class="fu-amt">₹{{ '{:,.0f}'.format(f.tuition_fee or 0) }}</span></td>
+              <td><span class="fu-amt danger">₹{{ '{:,.0f}'.format(dues) }}</span></td>
+              <td><span class="fu-amt success">₹{{ '{:,.0f}'.format(total) }}</span></td>
+              <td>
+                <span class="fu-status {{ status_class }}">{{ status_text }}</span>
+              </td>
+              <td class="no-print" onclick="event.stopPropagation()">
+                <div class="fu-actions">
+                  <a href="{{ url_for('edit_fees', roll_no=f.roll_no) }}" class="fu-action edit" title="Edit">✏️</a>
+                  <a href="{{ url_for('receipt', roll_no=f.roll_no) }}" target="_blank" class="fu-action receipt" title="Receipt">🧾</a>
+                  {% if session.role == 'admin' %}
+                  <a href="{{ url_for('collect', roll_no=f.roll_no) }}" class="fu-action collect" title="Collect">💵</a>
+                  {% endif %}
+                  <button class="fu-action whatsapp" onclick="sendWA('{{ f.roll_no }}', '{{ f.name }}', {{ total }}, {{ dues }}, '{{ f.parent_phone or '' }}')" title="WhatsApp">💬</button>
+                  <a href="{{ url_for('delete_fees', roll_no=f.roll_no) }}" class="fu-action delete" onclick="return confirm('Delete karna hai?');" title="Delete">🗑️</a>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if not fees %}
+      <div class="fu-empty">
+        <div class="fu-empty-icon">📭</div>
+        <h3>No Fee Records Yet</h3>
+        <p>Add your first fee structure to get started</p>
+        <button class="fu-btn primary" onclick="switchTab('add', document.querySelectorAll('.fu-tab')[1])">➕ Add First Fee</button>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- CARD VIEW (hidden by default) -->
+    <div id="cardView" class="fu-card-view" style="display:none;"></div>
+
+    <!-- COMPACT VIEW (hidden) -->
+    <div id="compactView" class="fu-compact-view" style="display:none;"></div>
+
+    <div style="text-align:center;padding:14px;color:var(--text-muted);font-size:12.5px;font-weight:600;">
+      Showing <span style="color:var(--primary);font-weight:800;" id="visibleCount">{{ fees|length }}</span>
+      of <span style="font-weight:800;">{{ fees|length }}</span> records
+    </div>
   </div>
 </div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     TAB 2: ADD / UPDATE
+═══════════════════════════════════════════════════════════════════ -->
+<div id="tab-add" class="fu-tab-content" style="display:none;">
+  <div class="fu-card">
+    <div class="fu-card-title">
+      <h3><span class="fu-icon-badge">➕</span> Set / Update Fee Structure</h3>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:12px;color:var(--text-muted);font-weight:700;">Auto-save draft</span>
+        <label class="fu-switch">
+          <input type="checkbox" id="autoSaveToggle" checked>
+          <span class="fu-switch-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('save_fees') }}" id="feeForm">
+      <div class="fu-form-section">
+        <div class="fu-form-title">👤 Student Information</div>
+        <div class="fu-form-grid">
+          <input name="roll_no" id="rollNoInput" placeholder="Roll No *" required oninput="autosaveDraft()">
+          <input name="student_name" placeholder="Student Name (Optional)" oninput="autosaveDraft()">
+        </div>
+      </div>
+
+      <div class="fu-form-section">
+        <div class="fu-form-title">📚 Academic Fees</div>
+        <div class="fu-form-grid">
+          <div class="fu-input-wrap"><span class="fu-currency">₹</span><input name="tuition_fee" type="number" placeholder="Tuition Fee" oninput="calculateTotal();autosaveDraft()"></div>
+          <div class="fu-input-wrap"><span class="fu-currency">₹</span><input name="exam_fee" type="number" placeholder="Exam Fee" oninput="calculateTotal();autosaveDraft()"></div>
+          <div class="fu-input-wrap"><span class="fu-currency">₹</span><input name="book_fee" type="number" placeholder="Book Fee" oninput="calculateTotal();autosaveDraft()"></div>
+          <div class="fu-input-wrap"><span class="fu-currency">₹</span><input name="notebook_fee" type="number" placeholder="Notebook Fee" oninput="calculateTotal();autosaveDraft()"></div>
+          <div class="fu-input-wrap"><span class="fu-currency">₹</span><input name="dress_fee" type="number" placeholder="Dress Fee" oninput="calculateTotal();autosaveDraft()"></div>
+        </div>
+      </div>
+
+      <div class="fu-form-section">
+        <div class="fu-form-title">🚌 Transport & Hostel</div>
+        <div class="fu-form-grid">
+          <div class="fu-input-wrap"><span class="fu-currency">₹</span><input name="transport_fee" type="number" placeholder="Transport Fee" oninput="calculateTotal();autosaveDraft()"></div>
+          <div class="fu-input-wrap"><span class="fu-currency">₹</span><input name="hostel_fee" type="number" placeholder="Hostel Fee" oninput="calculateTotal();autosaveDraft()"></div>
+        </div>
+      </div>
+
+      <div class="fu-form-section">
+        <div class="fu-form-title">🧾 Other Fees</div>
+        <div class="fu-form-grid">
+          <div class="fu-input-wrap"><span class="fu-currency">₹</span><input name="admission_fee" type="number" placeholder="Admission Fee" oninput="calculateTotal();autosaveDraft()"></div>
+          <div class="fu-input-wrap"><span class="fu-currency">₹</span><input name="misc_fee" type="number" placeholder="Misc Fee" oninput="calculateTotal();autosaveDraft()"></div>
+          <div class="fu-input-wrap"><span class="fu-currency">₹</span><input name="back_dues" type="number" placeholder="Back Dues (Arrears)" oninput="calculateTotal();autosaveDraft()"></div>
+          <input name="admission_paid" type="number" placeholder="Admission Paid (0/1)" min="0" max="1" oninput="autosaveDraft()">
+        </div>
+      </div>
+
+      <div class="fu-total">
+        <div>
+          <div class="fu-total-label">Grand Total</div>
+          <div style="font-size:11.5px;opacity:0.85;margin-top:2px;font-weight:600;">Auto-calculated from all fields</div>
+        </div>
+        <div class="fu-total-amount">₹<span id="totalAmount">0</span></div>
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button type="submit" class="fu-btn success">💾 Save Fee Structure</button>
+        <button type="button" class="fu-btn warning" onclick="loadDraft()">📂 Load Draft</button>
+        <button type="reset" class="fu-btn outline" onclick="setTimeout(()=>{calculateTotal();clearDraft();},10)">🔄 Reset</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     TAB 3: ANALYTICS
+═══════════════════════════════════════════════════════════════════ -->
+<div id="tab-analytics" class="fu-tab-content" style="display:none;">
+  <div class="fu-chart-grid">
+    <div class="fu-chart-card">
+      <h4 class="fu-chart-title">📊 Fee Collection Overview</h4>
+      <div class="fu-chart-container"><canvas id="chartFee"></canvas></div>
+    </div>
+    <div class="fu-chart-card">
+      <h4 class="fu-chart-title">🥧 Dues Distribution</h4>
+      <div class="fu-chart-container"><canvas id="chartDues"></canvas></div>
+    </div>
+  </div>
+
+  <div class="fu-chart-grid">
+    <div class="fu-chart-card">
+      <h4 class="fu-chart-title">📈 Class-wise Comparison</h4>
+      <div class="fu-chart-container"><canvas id="chartClass"></canvas></div>
+    </div>
+    <div class="fu-chart-card">
+      <h4 class="fu-chart-title">🏆 Top 5 Defaulters</h4>
+      <div class="fu-def-list" id="topDefaulters"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     TAB 4: TOOLS
+═══════════════════════════════════════════════════════════════════ -->
+<div id="tab-tools" class="fu-tab-content" style="display:none;">
+  <div class="fu-card">
+    <div class="fu-card-title">
+      <h3><span class="fu-icon-badge">🛠️</span> Administrative Tools</h3>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;">
+      {% if session.role == 'admin' %}
+      <div class="fu-form-section" style="text-align:center;">
+        <div style="font-size:40px;margin-bottom:12px;">⚙️</div>
+        <h4 style="margin:0 0 6px;font-size:14px;font-weight:800;">Monthly Arrears</h4>
+        <p style="font-size:12px;color:var(--text-muted);margin:0 0 14px;">Auto-update back dues for all students</p>
+        <a href="{{ url_for('run_arrears_update') }}" class="fu-btn purple" onclick="return confirm('Arrears run karein?')">⚙️ Run Now</a>
+      </div>
+      {% endif %}
+
+      <div class="fu-form-section" style="text-align:center;">
+        <div style="font-size:40px;margin-bottom:12px;">📥</div>
+        <h4 style="margin:0 0 6px;font-size:14px;font-weight:800;">Export Data</h4>
+        <p style="font-size:12px;color:var(--text-muted);margin:0 0 14px;">Download all records as CSV</p>
+        <button class="fu-btn info" onclick="exportCSV()">📥 Export</button>
+      </div>
+
+      <div class="fu-form-section" style="text-align:center;">
+        <div style="font-size:40px;margin-bottom:12px;">🖨️</div>
+        <h4 style="margin:0 0 6px;font-size:14px;font-weight:800;">Print Report</h4>
+        <p style="font-size:12px;color:var(--text-muted);margin:0 0 14px;">Print current view or save as PDF</p>
+        <button class="fu-btn warning" onclick="window.print()">🖨️ Print</button>
+      </div>
+
+      <div class="fu-form-section" style="text-align:center;">
+        <div style="font-size:40px;margin-bottom:12px;">📊</div>
+        <h4 style="margin:0 0 6px;font-size:14px;font-weight:800;">Fee Summary</h4>
+        <p style="font-size:12px;color:var(--text-muted);margin:0 0 14px;">Quick totals & statistics</p>
+        <button class="fu-btn success" onclick="showSummary()">📊 View</button>
+      </div>
+
+      <div class="fu-form-section" style="text-align:center;">
+        <div style="font-size:40px;margin-bottom:12px;">💬</div>
+        <h4 style="margin:0 0 6px;font-size:14px;font-weight:800;">Bulk WhatsApp</h4>
+        <p style="font-size:12px;color:var(--text-muted);margin:0 0 14px;">Send reminders to all defaulters</p>
+        <button class="fu-btn pink" onclick="bulkWhatsAppAll()">💬 Send</button>
+      </div>
+
+      <div class="fu-form-section" style="text-align:center;">
+        <div style="font-size:40px;margin-bottom:12px;">🗑️</div>
+        <h4 style="margin:0 0 6px;font-size:14px;font-weight:800;">Clear Draft</h4>
+        <p style="font-size:12px;color:var(--text-muted);margin:0 0 14px;">Remove locally saved autosave data</p>
+        <button class="fu-btn danger" onclick="clearAllDrafts()">🗑️ Clear</button>
+      </div>
+    </div>
+
+    <div id="summaryBox" style="display:none;margin-top:20px;"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     STUDENT DETAIL MODAL
+═══════════════════════════════════════════════════════════════════ -->
+<div class="fu-modal-bg" id="studentModal" onclick="if(event.target===this) closeModal('studentModal')">
+  <div class="fu-modal">
+    <div class="fu-modal-header">
+      <h3 id="modalTitle">👤 Student Details</h3>
+      <button class="fu-modal-close" onclick="closeModal('studentModal')">✕</button>
+    </div>
+    <div class="fu-modal-body" id="modalBody"></div>
+    <div class="fu-modal-footer">
+      <button class="fu-btn info" onclick="printModal()">🖨️ Print</button>
+      <button class="fu-btn outline" onclick="closeModal('studentModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     COLUMN MODAL
+═══════════════════════════════════════════════════════════════════ -->
+<div class="fu-modal-bg" id="colModal" onclick="if(event.target===this) closeModal('colModal')">
+  <div class="fu-modal" style="max-width:400px;">
+    <div class="fu-modal-header">
+      <h3>👁️ Toggle Columns</h3>
+      <button class="fu-modal-close" onclick="closeModal('colModal')">✕</button>
+    </div>
+    <div class="fu-modal-body" id="columnToggles"></div>
+    <div class="fu-modal-footer">
+      <button class="fu-btn success" onclick="saveColPrefs()">💾 Save Preferences</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     COMMAND PALETTE
+═══════════════════════════════════════════════════════════════════ -->
+<div class="fu-cmd-bg" id="cmdBg" onclick="if(event.target===this) closeCmd()">
+  <div class="fu-cmd">
+    <div class="fu-cmd-input-wrap">
+      <span style="font-size:18px;">⌘</span>
+      <input id="cmdInput" placeholder="Type a command..." autocomplete="off" oninput="filterCmd()" onkeydown="cmdKeyNav(event)">
+      <span style="padding:3px 8px;background:var(--bg-2);border-radius:6px;font-size:11px;font-weight:700;color:var(--text-muted);">ESC</span>
+    </div>
+    <div class="fu-cmd-list" id="cmdList"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     FAB
+═══════════════════════════════════════════════════════════════════ -->
+<div class="fu-fab no-print" id="fab">
+  <button class="fu-fab-item" data-tip="Scroll to top" onclick="scrollTop()">⬆️</button>
+  <button class="fu-fab-item" data-tip="Export CSV" onclick="exportCSV()">📥</button>
+  <button class="fu-fab-item" data-tip="New Fee" onclick="switchTab('add', document.querySelectorAll('.fu-tab')[1])">➕</button>
+  <button class="fu-fab-main" onclick="toggleFab()" id="fabMain">⚡</button>
+</div>
+
+</div><!-- /fu -->
 
 <script>
-  function calculateTotal() {
-    const inputs = document.querySelectorAll('input[type="number"]');
-    let total = 0;
-    inputs.forEach(input => {
-      if (input.name !== 'admission_paid') { total += parseFloat(input.value) || 0; }
-    });
-    document.getElementById('totalAmount').innerText = total.toLocaleString('en-IN');
+/* ═══════════════════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════════════════ */
+let currentView = localStorage.getItem('feeView') || 'table';
+let sortState = {};
+let chartsReady = false;
+let cmdItems = [];
+let cmdIdx = 0;
+
+/* ═══════════════════════════════════════════════════════════════════
+   TABS
+═══════════════════════════════════════════════════════════════════ */
+function switchTab(name, btn) {
+  document.querySelectorAll('.fu-tab-content').forEach(t => t.style.display = 'none');
+  document.querySelectorAll('.fu-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).style.display = 'block';
+  if (btn) btn.classList.add('active');
+  if (name === 'analytics') setTimeout(initCharts, 80);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DARK MODE
+═══════════════════════════════════════════════════════════════════ */
+function toggleDarkMode() {
+  document.body.classList.toggle('dark-mode');
+  const dark = document.body.classList.contains('dark-mode');
+  localStorage.setItem('darkMode', dark);
+  document.getElementById('darkToggle').innerText = dark ? '☀️' : '🌙';
+  showToast(dark ? '🌙 Dark mode on' : '☀️ Light mode on', 'info');
+  if (chartsReady) { chartsReady = false; initCharts(); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════════════════════ */
+function showToast(msg, type = 'info', dur = 3000) {
+  const stack = document.getElementById('toastStack');
+  const el = document.createElement('div');
+  el.className = 'fu-toast ' + type;
+  const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+  el.innerHTML = `<span style="font-size:18px;">${icons[type]}</span><span>${msg}</span>`;
+  stack.appendChild(el);
+  setTimeout(() => {
+    el.style.animation = 'fuToastIn 0.3s reverse';
+    setTimeout(() => el.remove(), 300);
+  }, dur);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CALCULATE TOTAL
+═══════════════════════════════════════════════════════════════════ */
+function calculateTotal() {
+  const inputs = document.querySelectorAll('#feeForm input[type="number"]');
+  let total = 0;
+  inputs.forEach(inp => {
+    if (inp.name !== 'admission_paid') total += parseFloat(inp.value) || 0;
+  });
+  document.getElementById('totalAmount').innerText = total.toLocaleString('en-IN');
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   VIEW MODE
+═══════════════════════════════════════════════════════════════════ */
+function setView(mode, btn) {
+  currentView = mode;
+  localStorage.setItem('feeView', mode);
+  document.querySelectorAll('.fu-view-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  document.getElementById('tableView').style.display = mode === 'table' ? '' : 'none';
+  document.getElementById('cardView').style.display = mode === 'card' ? 'grid' : 'none';
+  document.getElementById('compactView').style.display = mode === 'compact' ? 'flex' : 'none';
+
+  if (mode === 'card') renderCardView();
+  if (mode === 'compact') renderCompactView();
+}
+
+function renderCardView() {
+  const rows = document.querySelectorAll('#tableBody tr');
+  const container = document.getElementById('cardView');
+  let html = '';
+  rows.forEach(r => {
+    if (r.style.display === 'none') return;
+    const d = r.dataset;
+    const statusClass = d.status;
+    const total = parseFloat(d.total) || 0;
+    const dues = parseFloat(d.dues) || 0;
+    html += `
+      <div class="fu-student-card ${statusClass}" onclick="openDetail('${d.roll}')">
+        <div class="fu-sc-header">
+          <div class="fu-sc-avatar">${(d.name || '?')[0].toUpperCase()}</div>
+          <div style="flex:1;">
+            <div class="fu-sc-name">${d.name}</div>
+            <div class="fu-sc-meta">
+              <span>Roll ${d.roll}</span>
+              <span>•</span>
+              <span>${d.class}</span>
+            </div>
+          </div>
+        </div>
+        <div class="fu-sc-rows">
+          <div class="fu-sc-row"><span class="lbl">Tuition</span><span class="val">₹${parseFloat(d.tuition).toLocaleString('en-IN')}</span></div>
+          <div class="fu-sc-row"><span class="lbl">Back Dues</span><span class="val" style="color:var(--danger);">₹${dues.toLocaleString('en-IN')}</span></div>
+          <div class="fu-sc-row" style="padding-top:6px;border-top:1px solid var(--border);margin-top:6px;">
+            <span class="lbl" style="font-weight:800;color:var(--text);">Total</span>
+            <span class="val" style="color:var(--success);font-size:15px;">₹${total.toLocaleString('en-IN')}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  container.innerHTML = html || '<div class="fu-empty" style="grid-column:1/-1;"><div class="fu-empty-icon">📭</div><h3>No records</h3></div>';
+}
+
+function renderCompactView() {
+  const rows = document.querySelectorAll('#tableBody tr');
+  const container = document.getElementById('compactView');
+  let html = '';
+  rows.forEach(r => {
+    if (r.style.display === 'none') return;
+    const d = r.dataset;
+    html += `
+      <div class="fu-compact-row" onclick="openDetail('${d.roll}')">
+        <span class="fu-roll">${d.roll}</span>
+        <span class="fu-c-name">${d.name}</span>
+        <span class="fu-c-class">${d.class}</span>
+        <span class="fu-c-amt" style="color:var(--danger);">₹${parseFloat(d.dues).toLocaleString('en-IN')}</span>
+        <span class="fu-c-amt" style="color:var(--success);">₹${parseFloat(d.total).toLocaleString('en-IN')}</span>
+      </div>
+    `;
+  });
+  container.innerHTML = html || '<div style="padding:40px;text-align:center;color:var(--text-muted);">No records</div>';
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FILTERS
+═══════════════════════════════════════════════════════════════════ */
+function populateClasses() {
+  const rows = document.querySelectorAll('#tableBody tr');
+  const classes = new Set();
+  rows.forEach(r => classes.add(r.dataset.class));
+  const sel = document.getElementById('classFilter');
+  Array.from(classes).sort().forEach(c => {
+    const o = document.createElement('option');
+    o.value = c; o.textContent = c;
+    sel.appendChild(o);
+  });
+}
+
+let searchTimer;
+function debounceSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(applyFilters, 180);
+}
+
+function applyFilters() {
+  const search = document.getElementById('searchInput').value.toUpperCase().trim();
+  const cf = document.getElementById('classFilter').value;
+  const df = document.getElementById('duesFilter').value;
+  const lim = document.getElementById('rowLimit').value;
+  const rows = document.querySelectorAll('#tableBody tr');
+  let vis = 0, shown = 0;
+
+  rows.forEach(r => {
+    const tds = r.getElementsByTagName('td');
+    const roll = (tds[1]?.textContent || '').toUpperCase();
+    const name = (tds[2]?.textContent || '').toUpperCase();
+    const cls = (tds[3]?.textContent || '').toUpperCase();
+    const dues = parseFloat(r.dataset.dues) || 0;
+    const risk = parseFloat(r.dataset.risk) || 0;
+
+    let ok = true;
+    if (search && !(roll.includes(search) || name.includes(search) || cls.includes(search))) ok = false;
+    if (cf && r.dataset.class !== cf) ok = false;
+    if (df === 'dues' && dues <= 0) ok = false;
+    if (df === 'clear' && dues > 0) ok = false;
+    if (df === 'high' && dues <= 5000) ok = false;
+    if (df === 'risk' && risk < 70) ok = false;
+
+    if (ok) {
+      vis++;
+      if (lim === 'all' || shown < parseInt(lim)) { r.style.display = ''; shown++; }
+      else r.style.display = 'none';
+    } else r.style.display = 'none';
+  });
+
+  document.getElementById('visibleCount').innerText = shown;
+  updateBulkBar();
+  if (currentView === 'card') renderCardView();
+  if (currentView === 'compact') renderCompactView();
+}
+
+function chipFilter(type, el) {
+  document.querySelectorAll('.fu-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('duesFilter').value = '';
+  document.getElementById('classFilter').value = '';
+  document.getElementById('searchInput').value = '';
+  if (type !== 'all') document.getElementById('duesFilter').value = type === 'clear' ? 'clear' : (type === 'dues' ? 'dues' : (type === 'high' ? 'high' : 'risk'));
+  applyFilters();
+}
+
+function quickFilter(type) {
+  const chip = document.querySelector(`.fu-chip[data-chip="${type}"]`);
+  if (chip) chipFilter(type, chip);
+  switchTab('list', document.querySelectorAll('.fu-tab')[0]);
+}
+
+function resetFilters() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('classFilter').value = '';
+  document.getElementById('duesFilter').value = '';
+  document.getElementById('rowLimit').value = 'all';
+  document.querySelectorAll('.fu-chip').forEach(c => c.classList.remove('active'));
+  document.querySelector('.fu-chip[data-chip="all"]').classList.add('active');
+  applyFilters();
+  showToast('🔄 Filters reset', 'info');
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SORTING
+═══════════════════════════════════════════════════════════════════ */
+function sortTable(idx) {
+  const tbody = document.getElementById('tableBody');
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  if (!rows.length) return;
+  sortState[idx] = !sortState[idx];
+  const dir = sortState[idx] ? 1 : -1;
+  document.querySelectorAll('table.fu-table th').forEach(th => th.classList.remove('sorted'));
+  document.querySelectorAll('table.fu-table th')[idx]?.classList.add('sorted');
+
+  rows.sort((a, b) => {
+    const av = a.getElementsByTagName('td')[idx]?.textContent.trim() || '';
+    const bv = b.getElementsByTagName('td')[idx]?.textContent.trim() || '';
+    const an = parseFloat(av.replace(/[₹,]/g, ''));
+    const bn = parseFloat(bv.replace(/[₹,]/g, ''));
+    if (!isNaN(an) && !isNaN(bn)) return (an - bn) * dir;
+    return av.localeCompare(bv) * dir;
+  });
+  rows.forEach(r => tbody.appendChild(r));
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   BULK SELECTION
+═══════════════════════════════════════════════════════════════════ */
+function toggleSelectAll() {
+  const checked = document.getElementById('selectAll').checked;
+  document.querySelectorAll('.row-check').forEach(cb => {
+    const row = cb.closest('tr');
+    if (row.style.display !== 'none') {
+      cb.checked = checked;
+      row.classList.toggle('selected', checked);
+    }
+  });
+  updateBulkBar();
+}
+
+function updateBulk(cb) {
+  cb.closest('tr').classList.toggle('selected', cb.checked);
+  updateBulkBar();
+}
+
+function updateBulkBar() {
+  const n = document.querySelectorAll('.row-check:checked').length;
+  document.getElementById('selCount').innerText = n;
+  document.getElementById('bulkBar').classList.toggle('show', n > 0);
+}
+
+function getSelected() {
+  return Array.from(document.querySelectorAll('.row-check:checked')).map(c => c.value);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   BULK ACTIONS
+═══════════════════════════════════════════════════════════════════ */
+function bulkExport() {
+  const rolls = getSelected();
+  if (!rolls.length) return showToast('Koi select nahi kiya', 'warning');
+  exportCSV(rolls);
+  showToast(`📥 ${rolls.length} records exported`, 'success');
+}
+
+function bulkWhatsApp() {
+  const rolls = getSelected();
+  if (!rolls.length) return showToast('Koi select nahi kiya', 'warning');
+  if (rolls.length > 5 && !confirm(`${rolls.length} students ko WhatsApp bhejna hai?`)) return;
+  rolls.forEach((roll, i) => {
+    setTimeout(() => {
+      const row = document.querySelector(`tr[data-roll="${roll}"]`);
+      if (row) sendWA(roll, row.dataset.name, row.dataset.total, row.dataset.dues, row.dataset.phone);
+    }, i * 600);
+  });
+  showToast(`💬 ${rolls.length} WhatsApp opening...`, 'info');
+}
+
+function bulkWhatsAppAll() {
+  const rows = Array.from(document.querySelectorAll('#tableBody tr')).filter(r => parseFloat(r.dataset.dues) > 0);
+  if (!rows.length) return showToast('Koi defaulter nahi mila', 'success');
+  if (!confirm(`${rows.length} defaulters ko WhatsApp reminder bhejna hai?`)) return;
+  rows.slice(0, 10).forEach((row, i) => {
+    setTimeout(() => sendWA(row.dataset.roll, row.dataset.name, row.dataset.total, row.dataset.dues, row.dataset.phone), i * 700);
+  });
+  showToast(`💬 ${Math.min(rows.length, 10)} WhatsApp opening...`, 'info', 5000);
+}
+
+function bulkDelete() {
+  const rolls = getSelected();
+  if (!rolls.length) return showToast('Koi select nahi kiya', 'warning');
+  if (!confirm(`${rolls.length} students delete karne hain?`)) return;
+  fetch('/bulk_delete_fees', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ roll_nos: rolls })
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.success) {
+      showToast(`🗑️ ${d.deleted} records deleted`, 'success');
+      setTimeout(() => location.reload(), 800);
+    } else showToast('❌ ' + (d.error || 'Failed'), 'error');
+  })
+  .catch(() => showToast('❌ Network error', 'error'));
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   WHATSAPP
+═══════════════════════════════════════════════════════════════════ */
+function sendWA(roll, name, total, dues, phone) {
+  const msg = `🙏 *Fee Reminder*\n\nDear Parent,\n\nStudent: *${name}*\nRoll No: *${roll}*\n\n📊 *Fee Summary:*\nTotal Fee: ₹${parseFloat(total).toLocaleString('en-IN')}\nOutstanding Dues: ₹${parseFloat(dues).toLocaleString('en-IN')}\n\nKripya jaldi fee jama karein.\n\nDhanyawad 🙏`;
+  let url;
+  if (phone) {
+    const p = phone.replace(/\D/g, '');
+    const full = p.length === 10 ? '91' + p : p;
+    url = `https://wa.me/${full}?text=${encodeURIComponent(msg)}`;
+  } else {
+    url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
   }
-  function searchTable() {
-    let filter = document.getElementById("searchInput").value.toUpperCase();
-    let tr = document.getElementById("feesTable").getElementsByTagName("tr");
-    for (let i = 1; i < tr.length; i++) {
-      let tdRoll = tr[i].getElementsByTagName("td")[0];
-      let tdName = tr[i].getElementsByTagName("td")[1];
-      if (tdRoll || tdName) {
-        let rollValue = tdRoll.textContent || tdRoll.innerText;
-        let nameValue = tdName.textContent || tdName.innerText;
-        if (rollValue.toUpperCase().indexOf(filter) > -1 || nameValue.toUpperCase().indexOf(filter) > -1) {
-          tr[i].style.display = "";
-        } else { tr[i].style.display = "none"; }
+  window.open(url, '_blank');
+  showToast('💬 WhatsApp opening...', 'success');
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   EXPORT CSV
+═══════════════════════════════════════════════════════════════════ */
+function exportCSV(only) {
+  const rows = document.querySelectorAll('#tableBody tr');
+  const csv = [['Roll No', 'Name', 'Class', 'Tuition', 'Back Dues', 'Total', 'Status']];
+  rows.forEach(r => {
+    if (only && !only.includes(r.querySelector('.row-check').value)) return;
+    if (r.style.display === 'none' && !only) return;
+    const tds = r.getElementsByTagName('td');
+    csv.push([
+      tds[1].textContent.trim(),
+      tds[2].textContent.trim(),
+      tds[3].textContent.trim(),
+      tds[4].textContent.trim().replace('₹', '').replace(/,/g, ''),
+      tds[5].textContent.trim().replace('₹', '').replace(/,/g, ''),
+      tds[6].textContent.trim().replace('₹', '').replace(/,/g, ''),
+      tds[7].textContent.trim()
+    ]);
+  });
+  const content = csv.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'fee_report_' + new Date().toISOString().slice(0, 10) + '.csv';
+  a.click();
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   STUDENT DETAIL MODAL
+═══════════════════════════════════════════════════════════════════ */
+function openDetail(roll) {
+  const row = document.querySelector(`tr[data-roll="${roll}"]`);
+  if (!row) return;
+  const d = row.dataset;
+  const total = parseFloat(d.total) || 0;
+  const dues = parseFloat(d.dues) || 0;
+  const risk = parseFloat(d.risk) || 0;
+
+  const statusHTML = d.status === 'clear'
+    ? '<span class="fu-status clear">✅ Clear</span>'
+    : d.status === 'pending'
+    ? '<span class="fu-status pending">⏳ Pending</span>'
+    : '<span class="fu-status high">🚨 High Dues</span>';
+
+  const items = [
+    ['📚 Tuition Fee', d.tuition],
+    ['🚌 Transport Fee', d.transport],
+    ['🏠 Hostel Fee', d.hostel],
+    ['🎓 Admission Fee', d.admission],
+    ['👔 Dress Fee', d.dress],
+    ['📝 Exam Fee', d.exam],
+    ['📖 Book Fee', d.book],
+    ['📓 Notebook Fee', d.notebook],
+    ['🔧 Misc Fee', d.misc]
+  ].filter(([_, v]) => parseFloat(v) > 0);
+
+  const riskColor = risk >= 70 ? 'var(--danger)' : (risk >= 30 ? 'var(--warning)' : 'var(--success)');
+
+  document.getElementById('modalTitle').innerHTML = `👤 ${d.name}`;
+
+  document.getElementById('modalBody').innerHTML = `
+    <div class="fu-info-grid">
+      <div class="fu-info-mini"><div class="fu-im-lbl">Roll Number</div><div class="fu-im-val">${d.roll}</div></div>
+      <div class="fu-info-mini"><div class="fu-im-lbl">Class</div><div class="fu-im-val">${d.class}</div></div>
+      <div class="fu-info-mini"><div class="fu-im-lbl">Phone</div><div class="fu-im-val">${d.phone || '—'}</div></div>
+      <div class="fu-info-mini"><div class="fu-im-lbl">Status</div><div class="fu-im-val">${statusHTML}</div></div>
+    </div>
+
+    <div class="fu-form-section">
+      <div class="fu-form-title">🎯 Risk Assessment</div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="flex:1;"><div class="fu-kpi-progress" style="height:10px;"><div style="height:100%;width:${risk}%;background:${riskColor};border-radius:20px;transition:width 0.8s;"></div></div></div>
+        <div style="font-size:22px;font-weight:900;color:${riskColor};font-variant-numeric:tabular-nums;">${risk}%</div>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:8px;font-weight:700;">
+        ${risk >= 70 ? '🚨 High risk — urgent follow-up required' : risk >= 30 ? '⚠️ Medium risk — send reminder' : '✅ Low risk — normal monitoring'}
+      </div>
+    </div>
+
+    <div class="fu-form-section">
+      <div class="fu-form-title">💰 Fee Breakdown</div>
+      ${items.map(([l, v]) => `<div class="fu-detail-row"><span class="lbl">${l}</span><span class="val">₹${parseFloat(v).toLocaleString('en-IN')}</span></div>`).join('')}
+      <div class="fu-detail-row dues"><span class="lbl">⚠️ Back Dues (Arrears)</span><span class="val">₹${dues.toLocaleString('en-IN')}</span></div>
+      <div class="fu-detail-row total"><span>💎 Grand Total</span><span class="val">₹${total.toLocaleString('en-IN')}</span></div>
+    </div>
+
+    <div class="fu-form-section">
+      <div class="fu-form-title">🎯 Quick Actions</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <a href="/edit_fees/${roll}" class="fu-btn warning sm">✏️ Edit</a>
+        <a href="/receipt/${roll}" target="_blank" class="fu-btn info sm">🧾 Receipt</a>
+        {% if session.role == 'admin' %}
+        <a href="/collect/${roll}" class="fu-btn success sm">💵 Collect</a>
+        {% endif %}
+        <button class="fu-btn pink sm" onclick="sendWA('${roll}','${d.name}',${total},${dues},'${d.phone}')">💬 WhatsApp</button>
+      </div>
+    </div>
+  `;
+  openModal('studentModal');
+}
+
+function printModal() {
+  const content = document.getElementById('modalBody').innerHTML;
+  const title = document.getElementById('modalTitle').innerHTML;
+  const w = window.open('', '', 'width=800,height=600');
+  w.document.write(`<html><head><title>Student Detail</title>
+  <style>
+    body{font-family:system-ui;padding:24px;}
+    .fu-form-section{border:1px solid #ddd;padding:16px;margin:12px 0;border-radius:10px;}
+    .fu-form-title{font-weight:bold;margin-bottom:10px;color:#6366f1;text-transform:uppercase;font-size:12px;}
+    .fu-detail-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px dashed #eee;}
+    .fu-detail-row.total{font-weight:bold;background:#f0fdf4;padding:12px;border-radius:8px;color:#059669;}
+    .fu-detail-row.dues .val{color:#ef4444;}
+    .fu-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+    .fu-info-mini{background:#f9fafb;padding:12px;border-radius:8px;}
+    .fu-im-lbl{font-size:10px;color:#666;text-transform:uppercase;font-weight:700;}
+    .fu-im-val{font-size:14px;font-weight:700;margin-top:4px;}
+    .fu-status{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+    .fu-status.clear{background:#d1fae5;color:#065f46;}
+    .fu-status.pending{background:#fef3c7;color:#92400e;}
+    .fu-status.high{background:#fee2e2;color:#991b1b;}
+  </style></head><body><h1>${title}</h1>${content}</body></html>`);
+  w.print();
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MODAL HELPERS
+═══════════════════════════════════════════════════════════════════ */
+function openModal(id) {
+  document.getElementById(id).classList.add('show');
+  if (id === 'colModal') buildColToggles();
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   COLUMN TOGGLE
+═══════════════════════════════════════════════════════════════════ */
+const COLS = [
+  { key: 'roll', label: 'Roll Number' },
+  { key: 'name', label: 'Student Name' },
+  { key: 'class', label: 'Class' },
+  { key: 'tuition', label: 'Tuition Fee' },
+  { key: 'dues', label: 'Back Dues' },
+  { key: 'total', label: 'Total' },
+  { key: 'status', label: 'Status' },
+  { key: 'actions', label: 'Actions' }
+];
+
+function buildColToggles() {
+  const prefs = JSON.parse(localStorage.getItem('feeColPrefs') || '{}');
+  document.getElementById('columnToggles').innerHTML = COLS.map(c => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);">
+      <span style="font-weight:700;">${c.label}</span>
+      <label class="fu-switch">
+        <input type="checkbox" data-col="${c.key}" ${prefs[c.key] !== false ? 'checked' : ''}>
+        <span class="fu-switch-slider"></span>
+      </label>
+    </div>
+  `).join('');
+}
+
+function saveColPrefs() {
+  const prefs = {};
+  document.querySelectorAll('#columnToggles input').forEach(cb => prefs[cb.dataset.col] = cb.checked);
+  localStorage.setItem('feeColPrefs', JSON.stringify(prefs));
+  applyColPrefs();
+  closeModal('colModal');
+  showToast('✅ Columns updated', 'success');
+}
+
+function applyColPrefs() {
+  const prefs = JSON.parse(localStorage.getItem('feeColPrefs') || '{}');
+  COLS.forEach(c => {
+    const vis = prefs[c.key] !== false;
+    document.querySelectorAll(`[data-col="${c.key}"]`).forEach(el => el.classList.toggle('fu-hidden-col', !vis));
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   STATS
+═══════════════════════════════════════════════════════════════════ */
+function updateStats() {
+  const rows = document.querySelectorAll('#tableBody tr');
+  let fee = 0, dues = 0, high = 0, duesCount = 0, clearCount = 0, riskCount = 0;
+
+  rows.forEach(r => {
+    const d = parseFloat(r.dataset.dues) || 0;
+    const t = parseFloat(r.dataset.total) || 0;
+    const risk = parseFloat(r.dataset.risk) || 0;
+    fee += t - d;
+    dues += d;
+    if (d > 5000) high++;
+    if (d > 0) duesCount++;
+    if (d === 0) clearCount++;
+    if (risk >= 70) riskCount++;
+  });
+
+  const grand = fee + dues;
+  const rate = grand > 0 ? Math.round((fee / grand) * 100) : 0;
+
+  animateNum('hsFee', fee);
+  animateNum('hsDues', dues);
+  animateNum('kpiFee', fee);
+  animateNum('kpiDues', dues);
+  animateNum('kpiGrand', grand);
+
+  document.getElementById('hsStudents').innerText = rows.length;
+  document.getElementById('hsHigh').innerText = high;
+  document.getElementById('hsRate').innerText = rate + '%';
+  document.getElementById('kpiHigh').innerText = high;
+  document.getElementById('kpiRate').innerText = rate + '%';
+  document.getElementById('kpiRateBar').style.width = rate + '%';
+  document.getElementById('kpiFeeCount').innerText = rows.length + ' records';
+  document.getElementById('kpiDuesCount').innerText = duesCount + ' students';
+
+  const maxDues = Math.max(1, ...Array.from(rows).map(r => parseFloat(r.dataset.dues) || 0));
+  document.getElementById('kpiDuesBar').style.width = Math.min(100, (dues / (grand || 1)) * 100) + '%';
+  document.getElementById('kpiHighBar').style.width = Math.min(100, (high / Math.max(1, rows.length)) * 100) + '%';
+
+  document.getElementById('chipAll').innerText = rows.length;
+  document.getElementById('chipDues').innerText = duesCount;
+  document.getElementById('chipClear').innerText = clearCount;
+  document.getElementById('chipHigh').innerText = high;
+  document.getElementById('chipRisk').innerText = riskCount;
+}
+
+function animateNum(id, target) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const dur = 900, t0 = performance.now();
+  function step(now) {
+    const p = Math.min((now - t0) / dur, 1);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.innerText = '₹' + Math.floor(target * eased).toLocaleString('en-IN');
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CHARTS
+═══════════════════════════════════════════════════════════════════ */
+function initCharts() {
+  if (chartsReady) return;
+  chartsReady = true;
+
+  const rows = document.querySelectorAll('#tableBody tr');
+  let fee = 0, dues = 0;
+  const classData = {};
+  const defs = [];
+
+  rows.forEach(r => {
+    const d = parseFloat(r.dataset.dues) || 0;
+    const t = parseFloat(r.dataset.total) || 0;
+    fee += t - d;
+    dues += d;
+    const c = r.dataset.class;
+    if (!classData[c]) classData[c] = { fee: 0, dues: 0 };
+    classData[c].fee += t - d;
+    classData[c].dues += d;
+    if (d > 0) defs.push({ name: r.dataset.name, dues: d, roll: r.dataset.roll });
+  });
+  defs.sort((a, b) => b.dues - a.dues);
+
+  const isDark = document.body.classList.contains('dark-mode');
+  Chart.defaults.color = isDark ? '#f1f5f9' : '#0f172a';
+  Chart.defaults.borderColor = isDark ? '#2d3748' : '#e2e8f0';
+  Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+  Chart.defaults.font.weight = 600;
+
+  new Chart(document.getElementById('chartFee'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Base Fee', 'Dues'],
+      datasets: [{
+        data: [fee, dues],
+        backgroundColor: ['#10b981', '#ef4444'],
+        borderWidth: 4,
+        borderColor: isDark ? '#1a2032' : '#fff',
+        hoverOffset: 12
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '68%',
+      plugins: {
+        legend: { position: 'bottom', labels: { padding: 18, font: { size: 13, weight: 700 }, usePointStyle: true, pointStyle: 'circle' } },
+        tooltip: {
+          backgroundColor: isDark ? '#0f172a' : '#1f2937',
+          padding: 12,
+          cornerRadius: 10,
+          callbacks: { label: c => ' ' + c.label + ': ₹' + c.parsed.toLocaleString('en-IN') }
+        }
       }
     }
+  });
+
+  const clear = rows.length - defs.length;
+  const pending = defs.filter(d => d.dues < 5000).length;
+  const high = defs.filter(d => d.dues >= 5000).length;
+
+  new Chart(document.getElementById('chartDues'), {
+    type: 'pie',
+    data: {
+      labels: ['Clear', 'Pending', 'High Dues'],
+      datasets: [{
+        data: [clear, pending, high],
+        backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+        borderWidth: 4,
+        borderColor: isDark ? '#1a2032' : '#fff',
+        hoverOffset: 12
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { padding: 18, font: { size: 13, weight: 700 }, usePointStyle: true, pointStyle: 'circle' } } }
+    }
+  });
+
+  const labels = Object.keys(classData).sort();
+  new Chart(document.getElementById('chartClass'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Base Fee', data: labels.map(c => classData[c].fee), backgroundColor: '#10b981', borderRadius: 8, barPercentage: 0.7 },
+        { label: 'Dues', data: labels.map(c => classData[c].dues), backgroundColor: '#ef4444', borderRadius: 8, barPercentage: 0.7 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { padding: 16, font: { size: 13, weight: 700 }, usePointStyle: true, pointStyle: 'circle' } },
+        tooltip: { callbacks: { label: c => ' ' + c.dataset.label + ': ₹' + c.parsed.y.toLocaleString('en-IN') } }
+      },
+      scales: {
+        y: { beginAtZero: true, grid: { color: isDark ? '#1e293b' : '#f1f5f9' }, ticks: { callback: v => '₹' + (v / 1000).toFixed(0) + 'k' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+
+  const top5 = defs.slice(0, 5);
+  document.getElementById('topDefaulters').innerHTML = top5.length
+    ? top5.map((d, i) => `
+        <div class="fu-def-item" onclick="openDetail('${d.roll}')">
+          <div class="fu-def-rank ${i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : ''}">${i + 1}</div>
+          <div class="fu-def-info">
+            <div class="fu-def-name">${d.name}</div>
+            <div class="fu-def-meta">Roll ${d.roll}</div>
+          </div>
+          <div class="fu-def-amt">₹${d.dues.toLocaleString('en-IN')}</div>
+        </div>
+      `).join('')
+    : `<div style="text-align:center;padding:40px 20px;color:var(--text-muted);">
+        <div style="font-size:60px;opacity:.4;">🎉</div>
+        <p style="font-weight:700;margin-top:12px;">No defaulters!</p>
+       </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SUMMARY
+═══════════════════════════════════════════════════════════════════ */
+function showSummary() {
+  const rows = document.querySelectorAll('#tableBody tr');
+  let fee = 0, dues = 0, grand = 0, high = 0, clear = 0;
+  rows.forEach(r => {
+    const d = parseFloat(r.dataset.dues) || 0;
+    const t = parseFloat(r.dataset.total) || 0;
+    fee += t - d; dues += d; grand += t;
+    if (d > 5000) high++;
+    if (d === 0) clear++;
+  });
+  const box = document.getElementById('summaryBox');
+  box.style.display = 'block';
+  box.innerHTML = `
+    <div class="fu-form-section">
+      <div class="fu-form-title">📊 Summary Report — ${new Date().toLocaleString('en-IN')}</div>
+      <div class="fu-kpis" style="margin:0;">
+        <div class="fu-kpi success"><div class="fu-kpi-label">Base Collection</div><div class="fu-kpi-value">₹${fee.toLocaleString('en-IN')}</div></div>
+        <div class="fu-kpi danger"><div class="fu-kpi-label">Outstanding</div><div class="fu-kpi-value danger">₹${dues.toLocaleString('en-IN')}</div></div>
+        <div class="fu-kpi purple"><div class="fu-kpi-label">Grand Total</div><div class="fu-kpi-value purple">₹${grand.toLocaleString('en-IN')}</div></div>
+        <div class="fu-kpi warning"><div class="fu-kpi-label">High Dues</div><div class="fu-kpi-value">${high}</div></div>
+        <div class="fu-kpi cyan"><div class="fu-kpi-label">Clear Students</div><div class="fu-kpi-value">${clear}</div></div>
+      </div>
+    </div>
+  `;
+  box.scrollIntoView({ behavior: 'smooth' });
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DRAFT
+═══════════════════════════════════════════════════════════════════ */
+let autoTimer;
+function autosaveDraft() {
+  if (!document.getElementById('autoSaveToggle').checked) return;
+  clearTimeout(autoTimer);
+  autoTimer = setTimeout(() => {
+    const form = document.getElementById('feeForm');
+    const data = {};
+    new FormData(form).forEach((v, k) => data[k] = v);
+    localStorage.setItem('feeDraft', JSON.stringify(data));
+  }, 800);
+}
+
+function loadDraft() {
+  const draft = localStorage.getItem('feeDraft');
+  if (!draft) return showToast('Koi draft nahi mila', 'warning');
+  const data = JSON.parse(draft);
+  const form = document.getElementById('feeForm');
+  Object.keys(data).forEach(k => {
+    const inp = form.querySelector(`[name="${k}"]`);
+    if (inp) inp.value = data[k];
+  });
+  calculateTotal();
+  showToast('📂 Draft loaded', 'success');
+}
+
+function clearDraft() { localStorage.removeItem('feeDraft'); showToast('🔄 Draft cleared', 'info'); }
+function clearAllDrafts() {
+  if (!confirm('Sabhi local drafts clear karne hain?')) return;
+  localStorage.removeItem('feeDraft');
+  showToast('🗑️ All drafts cleared', 'success');
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FAB
+═══════════════════════════════════════════════════════════════════ */
+function toggleFab() {
+  const f = document.getElementById('fab');
+  f.classList.toggle('open');
+  document.getElementById('fabMain').innerText = f.classList.contains('open') ? '✕' : '⚡';
+}
+function scrollTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   COMMAND PALETTE
+═══════════════════════════════════════════════════════════════════ */
+function getCommands() {
+  return [
+    { i: '➕', l: 'Add New Fee', c: 'Action', fn: () => switchTab('add', document.querySelectorAll('.fu-tab')[1]) },
+    { i: '📋', l: 'View Fee List', c: 'Action', fn: () => switchTab('list', document.querySelectorAll('.fu-tab')[0]) },
+    { i: '📊', l: 'Open Analytics', c: 'Action', fn: () => switchTab('analytics', document.querySelectorAll('.fu-tab')[2]) },
+    { i: '🛠️', l: 'Open Tools', c: 'Action', fn: () => switchTab('tools', document.querySelectorAll('.fu-tab')[3]) },
+    { i: '📥', l: 'Export to CSV', c: 'Data', fn: () => exportCSV() },
+    { i: '🖨️', l: 'Print Page', c: 'Data', fn: () => window.print() },
+    { i: '📊', l: 'Show Summary', c: 'Data', fn: () => showSummary() },
+    { i: '🌙', l: 'Toggle Dark Mode', c: 'Theme', fn: () => toggleDarkMode() },
+    { i: '👁️', l: 'Toggle Columns', c: 'View', fn: () => openModal('colModal') },
+    { i: '▦', l: 'Table View', c: 'View', fn: () => setView('table', document.querySelectorAll('.fu-view-btn')[0]) },
+    { i: '▢', l: 'Card View', c: 'View', fn: () => setView('card', document.querySelectorAll('.fu-view-btn')[1]) },
+    { i: '☰', l: 'Compact View', c: 'View', fn: () => setView('compact', document.querySelectorAll('.fu-view-btn')[2]) },
+    { i: '💰', l: 'Show Has Dues', c: 'Filter', fn: () => quickFilter('dues') },
+    { i: '✅', l: 'Show Clear Students', c: 'Filter', fn: () => quickFilter('clear') },
+    { i: '🚨', l: 'Show High Dues', c: 'Filter', fn: () => quickFilter('high') },
+    { i: '🎯', l: 'Show Critical Risk', c: 'Filter', fn: () => quickFilter('risk') },
+    { i: '🔄', l: 'Reset All Filters', c: 'Filter', fn: () => resetFilters() }
+  ];
+}
+
+function openCmd() {
+  document.getElementById('cmdBg').classList.add('show');
+  cmdItems = getCommands();
+  cmdIdx = 0;
+  renderCmd(cmdItems);
+  setTimeout(() => document.getElementById('cmdInput').focus(), 50);
+}
+function closeCmd() {
+  document.getElementById('cmdBg').classList.remove('show');
+  document.getElementById('cmdInput').value = '';
+}
+function renderCmd(items) {
+  const list = document.getElementById('cmdList');
+  if (!items.length) { list.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text-muted);">No commands found</div>'; return; }
+  list.innerHTML = items.map((c, i) => `
+    <div class="fu-cmd-item ${i === cmdIdx ? 'active' : ''}" onclick="execCmd(${i})">
+      <div class="fu-cmd-icon">${c.i}</div>
+      <span class="fu-cmd-label">${c.l}</span>
+      <span class="fu-cmd-cat">${c.c}</span>
+    </div>
+  `).join('');
+}
+function filterCmd() {
+  const q = document.getElementById('cmdInput').value.toLowerCase().trim();
+  cmdItems = q ? getCommands().filter(c => c.l.toLowerCase().includes(q) || c.c.toLowerCase().includes(q)) : getCommands();
+  cmdIdx = 0;
+  renderCmd(cmdItems);
+}
+function cmdKeyNav(e) {
+  if (e.key === 'ArrowDown') { e.preventDefault(); cmdIdx = Math.min(cmdIdx + 1, cmdItems.length - 1); renderCmd(cmdItems); }
+  if (e.key === 'ArrowUp') { e.preventDefault(); cmdIdx = Math.max(cmdIdx - 1, 0); renderCmd(cmdItems); }
+  if (e.key === 'Enter') { e.preventDefault(); execCmd(cmdIdx); }
+}
+function execCmd(i) { if (!cmdItems[i]) return; closeCmd(); setTimeout(cmdItems[i].fn, 100); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   KEYBOARD SHORTCUTS
+═══════════════════════════════════════════════════════════════════ */
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    openCmd();
+  } else if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+    e.preventDefault();
+    exportCSV();
+  } else if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+    e.preventDefault();
+    toggleDarkMode();
+  } else if (e.key === 'Escape') {
+    document.querySelectorAll('.fu-modal-bg.show, .fu-cmd-bg.show').forEach(m => m.classList.remove('show'));
+  } else if (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+    e.preventDefault();
+    document.getElementById('searchInput')?.focus();
   }
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', () => {
+  if (localStorage.getItem('darkMode') === 'true') {
+    document.body.classList.add('dark-mode');
+    document.getElementById('darkToggle').innerText = '☀️';
+  }
+
+  populateClasses();
+  updateStats();
+  applyFilters();
+  applyColPrefs();
+
+  // Restore view
+  if (currentView !== 'table') {
+    const btns = document.querySelectorAll('.fu-view-btn');
+    const idx = { table: 0, card: 1, compact: 2 }[currentView];
+    setView(currentView, btns[idx]);
+  }
+
+  console.log('%c💎 ULTRA Fee Management v4.0', 'color:#6366f1;font-size:18px;font-weight:900;');
+  console.log('%c⌘ Ctrl+K · Palette | Ctrl+E · Export | Ctrl+D · Dark | / · Search', 'color:#10b981;font-weight:700;font-size:13px;');
+
+  setTimeout(() => showToast('👋 Welcome! Ctrl+K se command palette kholo', 'info', 4500), 900);
+});
 </script>
+
 {% endblock %}

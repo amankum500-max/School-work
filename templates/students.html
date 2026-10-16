@@ -115,7 +115,64 @@
                         <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody>
+                            <tbody>
+                {% for s in students %}
+                <tr>
+                    <!-- Checkbox Column -->
+                    <td><input type="checkbox" class="student-checkbox" value="{{ s.id }}"></td>
+                    
+                    <!-- Roll No Column -->
+                    <td class="fw-bold">{{ s['roll_no'] }}</td>
+                    
+                    <!-- Name & Photo Column -->
+                    <td>
+                        {% if s.photo_url %}
+                            <img src="{{ s.photo_url }}" alt="{{ s.name }}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 10px; border: 2px solid #e0e0e0; vertical-align: middle;">
+                        {% else %}
+                            <span style="font-size: 1.5rem; margin-right: 10px; vertical-align: middle;">👤</span>
+                        {% endif %}
+                        <div class="fw-bold" style="display: inline-block; vertical-align: middle;">
+                            {{ s['name'] }}
+                            <div class="text-muted small">Father: {{ s['father'] or '-' }}</div>
+                        </div>
+                    </td>
+                    
+                    <!-- Class Column -->
+                    <td><span class="badge bg-light text-dark border">{{ s['class_name'] }}-{{ s['section'] }}</span></td>
+                    
+                    <!-- Parent Contact Column -->
+                    <td>
+                        <div>{{ s['parent_contact'] or s['contact'] or '-' }}</div>
+                        {% if s['parent_contact'] %}
+                        <a href="https://wa.me/91{{ s['parent_contact'] }}" target="_blank" class="text-success small text-decoration-none">📲 WhatsApp</a>
+                        {% endif %}
+                    </td>
+                    
+                    <!-- Fee Status Column -->
+                    <td>
+                        {% if s['total_balance'] and s['total_balance'] > 0 %}
+                            <span class="status-badge status-due">Due: ₹{{ "{:,.0f}".format(s['total_balance']) }}</span>
+                        {% else %}
+                            <span class="status-badge status-paid">✅ Paid</span>
+                        {% endif %}
+                    </td>
+                    
+                    <!-- Actions Column -->
+                    <td>
+                        <a href="{{ url_for('student_profile', sid=s['id']) }}" class="action-btn btn-view" title="View Profile">👤</a>
+                        <a href="{{ url_for('edit_student', sid=s['id']) }}" class="action-btn btn-edit" title="Edit">✏️</a>
+                        <a href="{{ url_for('student_id_card', sid=s['id']) }}" target="_blank" class="action-btn btn-id" title="ID Card">🪪</a>
+                        <a href="{{ url_for('generate_certificate', sid=s['id'], cert_type='bonafide') }}" target="_blank" class="action-btn btn-view" style="background:#e0f2fe; color:#0284c7;" title="Bonafide Certificate">📜</a>
+                        <a href="{{ url_for('delete_student', sid=s['id']) }}" class="action-btn btn-del" onclick="return confirm('Delete?')" title="Delete">🗑️</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="text-center text-muted py-4">No students found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    </div>
                     {% for s in students %}
                     <tr>
                         <td><input type="checkbox" class="student-checkbox" value="{{ s.id }}"></td>

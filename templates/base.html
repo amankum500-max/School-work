@@ -28,7 +28,7 @@
   <a href="{{ url_for('students') }}">🎓 Students</a>
   <a href="{{ url_for('fees') }}">💵 Fee Structure</a>
   <a href="{{ url_for('bills') }}">🧾 Bills</a>
-  <a href="{{ url_for('collect') }}">💰 Fee Collection</a>
+  <a href="{{ url_for('collect', roll_no=roll_no) }}">Fee Collection</a>
   <a href="{{ url_for('defaulters') }}">🚨 Defaulters</a>
   <a href="{{ url_for('expenses') }}">💸 Expenses</a>
   <a href="{{ url_for('reports') }}">📈 Reports</a>

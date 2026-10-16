@@ -26,7 +26,45 @@
 
     <!-- Add Form -->
     <div id="addStudentForm" class="card p-4 mb-4" style="display: none; border-radius: 15px;">
-        <!-- ... (Same as before) ... -->
+    <div id="addStudentForm" class="card p-4 mb-4" style="display: none; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0">➕ Add New Student</h5>
+        <button class="btn-close" onclick="toggleAddForm()"></button>
+    </div>
+    <form method="POST" action="{{ url_for('add_student') }}" class="row g-3">
+        <div class="col-md-3"><input name="roll_no" class="form-control" placeholder="Roll No *" required></div>
+        <div class="col-md-3"><input name="name" class="form-control" placeholder="Full Name *" required></div>
+        <div class="col-md-3"><input name="father" class="form-control" placeholder="Father Name"></div>
+        <div class="col-md-3"><input name="mother" class="form-control" placeholder="Mother Name"></div>
+        <div class="col-md-3"><input name="class_name" class="form-control" placeholder="Class"></div>
+        <div class="col-md-3"><input name="section" class="form-control" placeholder="Section"></div>
+        <div class="col-md-3">
+            <select name="gender" class="form-select">
+                <option value="">Select Gender</option>
+                <option>Male</option><option>Female</option>
+            </select>
+        </div>
+        <div class="col-md-3"><input name="dob" class="form-control" placeholder="DOB (YYYY-MM-DD)"></div>
+        <div class="col-md-3"><input name="contact" class="form-control" placeholder="Student Contact"></div>
+        <div class="col-md-3"><input name="parent_contact" class="form-control" placeholder="Parent Contact (WhatsApp)"></div>
+        <div class="col-md-3"><input name="admission_date" class="form-control" placeholder="Admission Date"></div>
+        <div class="col-md-3"><input name="transport_route" class="form-control" placeholder="Transport Route"></div>
+        <div class="col-md-6"><input name="address" class="form-control" placeholder="Full Address"></div>
+        <div class="col-md-3">
+            <select name="hostel" class="form-select">
+                <option value="">No Hostel</option>
+                <option value="Y">Hostel</option>
+            </select>
+        </div>
+        <!-- 🆕 Photo URL Input yahan add karein -->
+        <div class="col-md-6">
+            <input name="photo_url" class="form-control" placeholder="Photo URL (https://...)">
+        </div>
+        <div class="col-12 text-end">
+            <button class="btn btn-success px-4">Save Student</button>
+        </div>
+    </form>
+    </div>
     </div>
 
     <!-- Filters -->

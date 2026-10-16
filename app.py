@@ -1871,7 +1871,13 @@ def edit_fees(roll_no):
         except Exception as e:
             flash(f'❌ Update failed: {e}', 'danger')
     
-    return render_template('edit_fees.html', fee=fee, student=student)
+    return render_template('edit_fees.html', fee=fee, student=student)# app.py me, saare routes define karne ke baad, ek baar run karo:
+if __name__ == '__main__':
+    print("\n=== ALL ROUTES ===")
+    for rule in app.url_map.iter_rules():
+        print(f"{rule.endpoint:30s} → {rule.rule}")
+    print("===================\n")
+    app.run(...)
 # ====================================================== 
 # ======================================================
 # ---------------- RUN ----------------

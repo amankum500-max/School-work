@@ -207,7 +207,7 @@ def dashboard():
         - Aaj ka Collection: Rs {today_collection}
         - Lifetime Net Profit: Rs {lifetime_profit}
         - Total Pending Fees: Rs {total_due}
-        # Yahan aapka prompt string khatam hota hai (jo """ ke saath band hota hai)
+        
 """
 
 try:
@@ -235,20 +235,6 @@ return render_template('dashboard.html',
     monthly_target=monthly_target, 
     progress_pct=progress_pct,
     current_collection=current_collection)
-    lifetime_profit=lifetime_profit,
-    fee_status=fee_status, 
-    top_defaulters=top_defaulters,
-    class_strength=class_strength, 
-    performers_list=performers_list,
-    birthdays=birthdays, 
-    recent=recent_payments, 
-    recent_admissions=recent_admissions,
-    monthly_trend=monthly_trend, 
-    ai_insight=ai_insight,
-    monthly_target=monthly_target, 
-    progress_pct=progress_pct,
-    current_collection=current_collection)
-
 # ==================== ATTENDANCE ====================
 @app.route("/attendance", methods=["GET", "POST"])
 @login_required

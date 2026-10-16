@@ -335,17 +335,17 @@ def add_student():
     try:
         run("""INSERT INTO students
             (roll_no,name,father,mother,class_name,section,gender,dob,
-             contact,parent_contact,address,admission_date,transport_route,hostel)
-            VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+             contact,parent_contact,address,admission_date,transport_route,hostel,photo_url)
+            VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",  # <-- 1 %s badha
             (d["roll_no"], d["name"], d["father"], d["mother"],
              d["class_name"], d["section"], d["gender"], d["dob"],
              d["contact"], d["parent_contact"], d["address"],
-             d["admission_date"], d["transport_route"], d["hostel"]))
+             d["admission_date"], d["transport_route"], d["hostel"],
+             d.get("photo_url", "")))  # <-- Ye naya field add kiya
         flash("✅ Student added!", "success")
     except Exception as e:
         flash(f"Error: {e}", "error")
     return redirect(url_for("students"))
-
 @app.route("/student/edit/<int:sid>", methods=["GET", "POST"])
 @login_required
 def edit_student(sid):
@@ -354,10 +354,11 @@ def edit_student(sid):
         run("""UPDATE students SET
             roll_no=%s, name=%s, father=%s, mother=%s, class_name=%s, section=%s,
             gender=%s, dob=%s, contact=%s, parent_contact=%s, address=%s,
-            admission_date=%s, transport_route=%s, hostel=%s WHERE id=%s""",
+            admission_date=%s, transport_route=%s, hostel=%s, photo_url=%s WHERE id=%s""",  # <-- photo_url add kiya
             (d["roll_no"], d["name"], d["father"], d["mother"], d["class_name"],
              d["section"], d["gender"], d["dob"], d["contact"], d["parent_contact"],
-             d["address"], d["admission_date"], d["transport_route"], d["hostel"], sid))
+             d["address"], d["admission_date"], d["transport_route"], d["hostel"], 
+             d.get("photo_url", ""), sid))  # <-- Value pass ki
         flash("✅ Student updated!", "success")
         return redirect(url_for("students"))
     student = one("SELECT * FROM students WHERE id=%s", (sid,))

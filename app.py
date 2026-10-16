@@ -1827,6 +1827,51 @@ def backup_download():
 def notice_board_public():
     notices_list = db_all("SELECT * FROM notices WHERE active=1 ORDER BY priority DESC, posted_date DESC LIMIT 20")
     return render_template("notice_board_public.html", notices=notices_list)
+@app.route('/edit_fees/<roll_no>', methods=['GET', 'POST'])
+@login_required
+def edit_fees(roll_no):
+    """Edit existing fee record."""
+    fee = db.get_fee(roll_no)
+    student = db.get_student(roll_no)
+    
+    if not fee or not student:
+        flash(f'❌ Record not found for {roll_no}', 'warning')
+        return redirect(url_for('fees'))
+    
+    if request.method == 'POST':
+        def num(k):
+            try:
+                return float(request.form.get(k) or 0)
+            except (ValueError, TypeError):
+                return 0
+        
+        try:
+            db.save_fee(roll_no,
+                tuition_fee=num('tuition_fee'),
+                transport_fee=num('transport_fee'),
+                hostel_fee=num('hostel_fee'),
+                admission_fee=num('admission_fee'),
+                dress_fee=num('dress_fee'),
+                exam_fee=num('exam_fee'),
+                book_fee=num('book_fee'),
+                notebook_fee=num('notebook_fee'),
+                misc_fee=num('misc_fee'),
+                back_dues=num('back_dues'),
+                admission_paid=int(num('admission_paid')),
+            )
+            
+            # Student info bhi update karo (optional)
+            name = request.form.get('student_name', '').strip()
+            if name:
+                db.update_student(roll_no, {'name': name})
+            
+            db.log_action(session['username'], 'EDIT_FEES', roll_no)
+            flash(f'✅ {roll_no} updated successfully!', 'success')
+            return redirect(url_for('fees'))
+        except Exception as e:
+            flash(f'❌ Update failed: {e}', 'danger')
+    
+    return render_template('edit_fees.html', fee=fee, student=student)
 # ====================================================== 
 # ======================================================
 # ---------------- RUN ----------------

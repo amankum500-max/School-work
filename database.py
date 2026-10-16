@@ -18,6 +18,7 @@ def init_db():
     conn = get_db()
     c = conn.cursor()
     c.execute("""
+    -- USERS & AUTH
     CREATE TABLE IF NOT EXISTS users(
         id SERIAL PRIMARY KEY,
         username TEXT UNIQUE,
@@ -27,50 +28,18 @@ def init_db():
         active INTEGER DEFAULT 1
     );
 
-    -- Staff Table
-    CREATE TABLE IF NOT EXISTS staff (
+    -- PARENT PORTAL USERS
+    CREATE TABLE IF NOT EXISTS parent_users(
         id SERIAL PRIMARY KEY,
-        staff_id VARCHAR(50) UNIQUE,
-        name VARCHAR(100) NOT NULL,
-        designation VARCHAR(50),
-        subject VARCHAR(50),
+        username VARCHAR(50) UNIQUE NOT NULL,
+        password VARCHAR(100) NOT NULL,
+        parent_name VARCHAR(100),
+        child_roll_no VARCHAR(50),
         contact VARCHAR(20),
-        email VARCHAR(100),
-        joining_date DATE,
-        salary NUMERIC(10,2),
-        address TEXT
+        active INTEGER DEFAULT 1
     );
 
-    -- Library Books Table
-    CREATE TABLE IF NOT EXISTS library_books (
-        id SERIAL PRIMARY KEY,
-        book_id VARCHAR(50) UNIQUE,
-        title VARCHAR(200) NOT NULL,
-        author VARCHAR(100),
-        category VARCHAR(50),
-        total_copies INT DEFAULT 1,
-        available_copies INT DEFAULT 1
-    );
-CREATE TABLE IF NOT EXISTS students(
-    id SERIAL PRIMARY KEY,
-    roll_no TEXT UNIQUE,
-    name TEXT,
-    ...
-    hostel TEXT,
-    photo_url TEXT  -- <--- Ye line add karein
-);
-    -- Book Issues Table
-    CREATE TABLE IF NOT EXISTS book_issues (
-        id SERIAL PRIMARY KEY,
-        book_id VARCHAR(50),
-        roll_no VARCHAR(50),
-        issue_date DATE,
-        due_date DATE,
-        return_date DATE,
-        fine NUMERIC(10,2) DEFAULT 0,
-        status VARCHAR(20) DEFAULT 'Issued'
-    );
-
+    -- STUDENTS
     CREATE TABLE IF NOT EXISTS students(
         id SERIAL PRIMARY KEY,
         roll_no TEXT UNIQUE,
@@ -86,9 +55,24 @@ CREATE TABLE IF NOT EXISTS students(
         address TEXT,
         admission_date TEXT,
         transport_route TEXT,
-        hostel TEXT
+        hostel TEXT,
+        photo_url TEXT
     );
 
+    -- STAFF
+    CREATE TABLE IF NOT EXISTS staff(
+        id SERIAL PRIMARY KEY,
+        emp_id TEXT UNIQUE,
+        name TEXT,
+        role TEXT,
+        subject TEXT,
+        qualification TEXT,
+        contact TEXT,
+        salary TEXT,
+        join_date TEXT
+    );
+
+    -- STUDENT FEES STRUCTURE
     CREATE TABLE IF NOT EXISTS student_fees(
         id SERIAL PRIMARY KEY,
         roll_no TEXT UNIQUE,
@@ -105,6 +89,7 @@ CREATE TABLE IF NOT EXISTS students(
         back_dues REAL DEFAULT 0
     );
 
+    -- BILLS
     CREATE TABLE IF NOT EXISTS bills(
         id SERIAL PRIMARY KEY,
         bill_no TEXT,
@@ -127,6 +112,7 @@ CREATE TABLE IF NOT EXISTS students(
         status TEXT
     );
 
+    -- PAYMENTS
     CREATE TABLE IF NOT EXISTS payments(
         id SERIAL PRIMARY KEY,
         receipt_no TEXT,
@@ -138,6 +124,7 @@ CREATE TABLE IF NOT EXISTS students(
         remark TEXT
     );
 
+    -- EXPENSES
     CREATE TABLE IF NOT EXISTS expenses(
         id SERIAL PRIMARY KEY,
         category TEXT,
@@ -147,6 +134,7 @@ CREATE TABLE IF NOT EXISTS students(
         staff_id TEXT
     );
 
+    -- MARKS / RESULTS
     CREATE TABLE IF NOT EXISTS marks(
         id SERIAL PRIMARY KEY,
         roll_no TEXT,
@@ -156,117 +144,125 @@ CREATE TABLE IF NOT EXISTS students(
         total TEXT
     );
 
-    -- Health Records Table
-    CREATE TABLE IF NOT EXISTS student_health (
+    -- ATTENDANCE
+    CREATE TABLE IF NOT EXISTS attendance(
         id SERIAL PRIMARY KEY,
-        roll_no VARCHAR(50) REFERENCES students(roll_no) ON DELETE CASCADE,
-        blood_group VARCHAR(10),
+        roll_no TEXT,
+        att_date TEXT NOT NULL,
+        status TEXT NOT NULL
+    );
+
+    -- STUDENT HEALTH RECORDS
+    CREATE TABLE IF NOT EXISTS student_health(
+        id SERIAL PRIMARY KEY,
+        roll_no TEXT UNIQUE,
+        blood_group TEXT,
         allergies TEXT,
-        emergency_contact VARCHAR(20)
+        emergency_contact TEXT
     );
 
-    -- Attendance Table
-    CREATE TABLE IF NOT EXISTS attendance (
+    -- DIGITAL LIBRARY
+    CREATE TABLE IF NOT EXISTS library_books(
         id SERIAL PRIMARY KEY,
-        roll_no VARCHAR(50) REFERENCES students(roll_no) ON DELETE CASCADE,
-        att_date DATE NOT NULL,
-        status VARCHAR(10) NOT NULL
+        book_id TEXT UNIQUE,
+        title TEXT NOT NULL,
+        author TEXT,
+        category TEXT,
+        total_copies INTEGER DEFAULT 1,
+        available_copies INTEGER DEFAULT 1
     );
 
-    -- Hostel Rooms
-    CREATE TABLE IF NOT EXISTS hostel_rooms (
+    CREATE TABLE IF NOT EXISTS book_issues(
         id SERIAL PRIMARY KEY,
-        room_no VARCHAR(20) UNIQUE,
-        floor VARCHAR(20),
-        capacity INT DEFAULT 4,
-        occupied INT DEFAULT 0,
-        monthly_fee NUMERIC(10,2) DEFAULT 0,
-        warden_name VARCHAR(100),
-        warden_contact VARCHAR(20)
+        book_id TEXT,
+        roll_no TEXT,
+        issue_date TEXT,
+        due_date TEXT,
+        return_date TEXT,
+        fine REAL DEFAULT 0,
+        status TEXT DEFAULT 'Issued'
     );
 
-    -- Hostel Allocations
-    CREATE TABLE IF NOT EXISTS hostel_allocations (
+    -- HOSTEL MANAGEMENT
+    CREATE TABLE IF NOT EXISTS hostel_rooms(
         id SERIAL PRIMARY KEY,
-        roll_no VARCHAR(50),
-        room_no VARCHAR(20),
-        allocated_date DATE,
-        status VARCHAR(20) DEFAULT 'Active'
+        room_no TEXT UNIQUE,
+        floor TEXT,
+        capacity INTEGER DEFAULT 4,
+        occupied INTEGER DEFAULT 0,
+        monthly_fee REAL DEFAULT 0,
+        warden_name TEXT,
+        warden_contact TEXT
     );
 
-    -- Transport Routes
-    CREATE TABLE IF NOT EXISTS transport_routes (
+    CREATE TABLE IF NOT EXISTS hostel_allocations(
         id SERIAL PRIMARY KEY,
-        route_name VARCHAR(100),
-        route_number VARCHAR(20),
-        driver_name VARCHAR(100),
-        driver_contact VARCHAR(20),
-        vehicle_no VARCHAR(50),
-        capacity INT DEFAULT 30,
-        occupied INT DEFAULT 0,
-        monthly_fee NUMERIC(10,2) DEFAULT 0,
+        roll_no TEXT,
+        room_no TEXT,
+        allocated_date TEXT,
+        status TEXT DEFAULT 'Active'
+    );
+
+    -- TRANSPORT MANAGEMENT
+    CREATE TABLE IF NOT EXISTS transport_routes(
+        id SERIAL PRIMARY KEY,
+        route_name TEXT,
+        route_number TEXT UNIQUE,
+        driver_name TEXT,
+        driver_contact TEXT,
+        vehicle_no TEXT,
+        capacity INTEGER DEFAULT 30,
+        occupied INTEGER DEFAULT 0,
+        monthly_fee REAL DEFAULT 0,
         stops TEXT
     );
 
-    -- Transport Allocations
-    CREATE TABLE IF NOT EXISTS transport_allocations (
+    CREATE TABLE IF NOT EXISTS transport_allocations(
         id SERIAL PRIMARY KEY,
-        roll_no VARCHAR(50),
-        route_number VARCHAR(20),
-        stop_name VARCHAR(100),
-        allocated_date DATE,
-        status VARCHAR(20) DEFAULT 'Active'
+        roll_no TEXT,
+        route_number TEXT,
+        stop_name TEXT,
+        allocated_date TEXT,
+        status TEXT DEFAULT 'Active'
     );
 
-    -- Parent Portal Users
-    CREATE TABLE IF NOT EXISTS parent_users (
+    -- CLASSES & SUBJECTS
+    CREATE TABLE IF NOT EXISTS classes(
         id SERIAL PRIMARY KEY,
-        username VARCHAR(50) UNIQUE NOT NULL,
-        password VARCHAR(100) NOT NULL,
-        parent_name VARCHAR(100),
-        child_roll_no VARCHAR(50),
-        contact VARCHAR(20),
-        active INT DEFAULT 1
+        class_name TEXT UNIQUE,
+        sections TEXT,
+        class_teacher TEXT,
+        room_no TEXT
     );
 
-    -- Classes & Sections
-    CREATE TABLE IF NOT EXISTS classes (
+    CREATE TABLE IF NOT EXISTS subjects(
         id SERIAL PRIMARY KEY,
-        class_name VARCHAR(50) UNIQUE,
-        sections VARCHAR(100),
-        class_teacher VARCHAR(100),
-        room_no VARCHAR(20)
+        subject_name TEXT,
+        subject_code TEXT,
+        class_name TEXT,
+        teacher_name TEXT,
+        max_marks INTEGER DEFAULT 100
     );
 
-    -- Subjects
-    CREATE TABLE IF NOT EXISTS subjects (
+    -- AUDIT LOGS
+    CREATE TABLE IF NOT EXISTS audit_logs(
         id SERIAL PRIMARY KEY,
-        subject_name VARCHAR(100) UNIQUE,
-        subject_code VARCHAR(20),
-        class_name VARCHAR(50),
-        teacher_name VARCHAR(100),
-        max_marks INT DEFAULT 100
-    );
-
-    -- Audit Log
-    CREATE TABLE IF NOT EXISTS audit_logs (
-        id SERIAL PRIMARY KEY,
-        user_name VARCHAR(100),
-        action VARCHAR(200),
+        user_name TEXT,
+        action TEXT,
         details TEXT,
         log_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
-    -- Notice Board
-    CREATE TABLE IF NOT EXISTS notices (
+    -- NOTICE BOARD
+    CREATE TABLE IF NOT EXISTS notices(
         id SERIAL PRIMARY KEY,
-        title VARCHAR(200),
+        title TEXT,
         content TEXT,
-        category VARCHAR(50),
-        posted_by VARCHAR(100),
-        posted_date DATE,
-        priority VARCHAR(20) DEFAULT 'Normal',
-        active INT DEFAULT 1
+        category TEXT,
+        posted_by TEXT,
+        posted_date TEXT,
+        priority TEXT DEFAULT 'Normal',
+        active INTEGER DEFAULT 1
     );
     """)
     conn.commit()

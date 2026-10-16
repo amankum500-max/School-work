@@ -1878,6 +1878,167 @@ if __name__ == '__main__':
         print(f"{rule.endpoint:30s} → {rule.rule}")
     print("===================\n")
     app.run(...)
+# ============================================================
+# EDIT FEES ROUTE — YE ZAROORI HAI
+# ============================================================
+@app.route('/edit_fees/<roll_no>', methods=['GET', 'POST'])
+@login_required
+def edit_fees(roll_no):
+    fee = db.get_fee(roll_no)
+    student = db.get_student(roll_no)
+    
+    if not fee or not student:
+        flash(f'❌ Record not found for {roll_no}', 'warning')
+        return redirect(url_for('fees'))
+    
+    if request.method == 'POST':
+        def num(k):
+            try:
+                return float(request.form.get(k) or 0)
+            except (ValueError, TypeError):
+                return 0
+        
+        try:
+            db.save_fee(roll_no,
+                tuition_fee=num('tuition_fee'),
+                transport_fee=num('transport_fee'),
+                hostel_fee=num('hostel_fee'),
+                admission_fee=num('admission_fee'),
+                dress_fee=num('dress_fee'),
+                exam_fee=num('exam_fee'),
+                book_fee=num('book_fee'),
+                notebook_fee=num('notebook_fee'),
+                misc_fee=num('misc_fee'),
+                back_dues=num('back_dues'),
+                admission_paid=int(num('admission_paid')),
+            )
+            
+            name = request.form.get('student_name', '').strip()
+            if name:
+                db.update_student(roll_no, {'name': name})
+            
+            flash(f'✅ {roll_no} updated!', 'success')
+            return redirect(url_for('fees'))
+        except Exception as e:
+            flash(f'❌ Failed: {e}', 'danger')
+    
+    return render_template('edit_fees.html', fee=fee, student=student)
+
+
+# ============================================================
+# DELETE FEES ROUTE
+# ============================================================
+@app.route('/delete_fees/<roll_no>')
+@login_required
+def delete_fees(roll_no):
+    try:
+        db.delete_fee(roll_no)
+        db.delete_student(roll_no)
+        flash(f'🗑️ {roll_no} deleted', 'success')
+    except Exception as e:
+        flash(f'❌ {e}', 'danger')
+    return redirect(url_for('fees'))
+
+
+# ============================================================
+# RECEIPT ROUTE
+# ============================================================
+@app.route('/receipt/<roll_no>')
+@login_required
+def receipt(roll_no):
+    from datetime import datetime
+    fee = db.get_fee(roll_no)
+    student = db.get_student(roll_no)
+    if not fee or not student:
+        flash('❌ No record', 'warning')
+        return redirect(url_for('fees'))
+    total = sum([float(fee.get(k) or 0) for k in [
+        'tuition_fee', 'transport_fee', 'hostel_fee', 'admission_fee',
+        'dress_fee', 'exam_fee', 'book_fee', 'notebook_fee', 'misc_fee', 'back_dues'
+    ]])
+    return render_template('receipt.html',
+        fee=fee, student=student,
+        payments=db.get_payments(roll_no),
+        total=total, now=datetime.now())
+
+
+# ============================================================
+# COLLECT ROUTE (agar nahi hai to)
+# ============================================================
+@app.route('/collect/<roll_no>', methods=['GET', 'POST'])
+@login_required
+def collect(roll_no=None):
+    from datetime import datetime
+    if request.method == 'POST':
+        roll_no = request.form.get('roll_no')
+        try:
+            amount = float(request.form.get('amount') or 0)
+            fee = db.get_fee(roll_no)
+            if fee and amount > 0:
+                new_dues = max(0, float(fee.get('back_dues') or 0) - amount)
+                db.save_fee(roll_no,
+                    tuition_fee=fee.get('tuition_fee', 0),
+                    transport_fee=fee.get('transport_fee', 0),
+                    hostel_fee=fee.get('hostel_fee', 0),
+                    admission_fee=fee.get('admission_fee', 0),
+                    dress_fee=fee.get('dress_fee', 0),
+                    exam_fee=fee.get('exam_fee', 0),
+                    book_fee=fee.get('book_fee', 0),
+                    notebook_fee=fee.get('notebook_fee', 0),
+                    misc_fee=fee.get('misc_fee', 0),
+                    back_dues=new_dues,
+                    admission_paid=fee.get('admission_paid', 0),
+                )
+                rcp = f"RCP{datetime.now().strftime('%Y%m%d%H%M%S')}"
+                db.add_payment(roll_no, amount, mode=request.form.get('mode', 'cash'),
+                    note=request.form.get('note', ''), paid_by=session.get('username', 'system'),
+                    receipt_no=rcp)
+                flash(f'✅ ₹{amount} collected. Dues: ₹{new_dues}', 'success')
+                return redirect(url_for('receipt', roll_no=roll_no))
+        except Exception as e:
+            flash(f'❌ {e}', 'danger')
+    
+    fee = db.get_fee(roll_no) if roll_no else None
+    student = db.get_student(roll_no) if roll_no else None
+    return render_template('collect.html', fee=fee, student=student)
+
+
+# ============================================================
+# BULK DELETE
+# ============================================================
+@app.route('/bulk_delete_fees', methods=['POST'])
+@login_required
+def bulk_delete_fees_route():
+    try:
+        data = request.get_json() or {}
+        rolls = data.get('roll_nos', [])
+        if not rolls:
+            return jsonify({'error': 'No rolls'}), 400
+        db.bulk_delete_fees(rolls)
+        for r in rolls:
+            db.delete_student(r)
+        return jsonify({'success': True, 'deleted': len(rolls)})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================================
+# RUN ARREARS
+# ============================================================
+@app.route('/run_arrears_update')
+@login_required
+def run_arrears_update():
+    try:
+        if hasattr(db, 'run_monthly_arrears'):
+            result = db.run_monthly_arrears()
+            flash(f"✅ Arrears updated — {result.get('updated', 0)} students", 'success')
+        else:
+            flash('⚠️ Function not available', 'warning')
+    except Exception as e:
+        flash(f'❌ {e}', 'danger')
+    return redirect(url_for('fees'))
+   if __name__ == "__main__":
+    app.run(...)
 # ====================================================== 
 # ======================================================
 # ---------------- RUN ----------------

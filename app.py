@@ -208,16 +208,14 @@ def dashboard():
         - Lifetime Net Profit: Rs {lifetime_profit}
         - Total Pending Fees: Rs {total_due}
         - Top Defaulters: {[f"{d['name']} (Rs {d['total_balance']})" for d in top_defaulters]}
-        """
-        try:
-            ai_insight = ai_model.generate_content(prompt).text
-        except Exception:
-            ai_insight = "AI Briefing abhi available nahi hai."
-roll_no = request.args.get('roll_no', '') 
+        # ... aapka prompt string yahan khatam hota hai ...
+- Top Defaulters: {[f"{d['name']} (Rs {d['total_balance']})" for d in top_defaulters]}
+"""
 
+try:
+    ai_insight = ai_model.generate_content(prompt).text
 except Exception:
     ai_insight = "AI Briefing abhi available nahi hai."
-
 
 roll_no = request.args.get('roll_no', '') 
 

@@ -214,7 +214,7 @@ def dashboard():
         except Exception:
             ai_insight = "AI Briefing abhi available nahi hai."
 
-    return render_template('dashboard.html', roll_no=roll_no)
+    return render_template('dashboard.html', roll_no=roll_no
         students=students_count, total_due=total_due,
         today_collection=today_collection, lifetime_profit=lifetime_profit,
         fee_status=fee_status, top_defaulters=top_defaulters,

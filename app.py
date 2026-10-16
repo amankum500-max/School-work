@@ -218,11 +218,11 @@ roll_no = request.args.get('roll_no', '')
 except Exception:
     ai_insight = "AI Briefing abhi available nahi hai."
 
-# Yeh line roll_no ko URL se uthayegi
+
 roll_no = request.args.get('roll_no', '') 
 
 return render_template('dashboard.html', 
-    roll_no=roll_no, # Ab yeh kaam karega
+    roll_no=roll_no,
     students=students_count, 
     total_due=total_due,
     today_collection=today_collection, 
